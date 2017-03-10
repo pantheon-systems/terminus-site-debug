@@ -1,0 +1,51 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "a2eaafd4eea474b55bb0503d23255a7c",
+    "content-hash": "4c461b5206a8de840ebc9b5b75d40820",
+    "packages": [
+        {
+            "name": "pantheon-systems/terminus-rsync-plugin",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pantheon-systems/terminus-rsync-plugin.git",
+                "reference": "b3b0ecf516143d5289c51cd0031a0f8697303fbd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pantheon-systems/terminus-rsync-plugin/zipball/b3b0ecf516143d5289c51cd0031a0f8697303fbd",
+                "reference": "b3b0ecf516143d5289c51cd0031a0f8697303fbd",
+                "shasum": ""
+            },
+            "type": "terminus-plugin",
+            "extra": {
+                "terminus": {
+                    "compatible-version": "^1"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Pantheon\\TerminusRsync\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Rsync - Terminus Plugin that provides a quick shortcut for rsync-ing files to and from a Pantheon site.",
+            "time": "2017-01-09 18:43:14"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

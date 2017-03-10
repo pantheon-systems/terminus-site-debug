@@ -1,0 +1,13 @@
+{
+    "name": "jfussion/terminus-get-logs",
+    "description": "Get server logs on all appservers in a specific environment.",
+    "type": "terminus-plugin",
+    "autoload": {
+        "psr-4": { "Pantheon\\TerminusGetLogs\\": "src" }
+    },
+    "extra": {
+        "terminus": {
+            "compatible-version": "1.*"
+        }
+    }
+}
