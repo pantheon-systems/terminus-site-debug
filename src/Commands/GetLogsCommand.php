@@ -2,6 +2,9 @@
 /**
  * This command will get all server logs on all appservers of a specific environment
  * specially on plans that has multiple appservers on live and test.
+ *
+ * Big thanks Greg Anderson. Some of the codes are from his rsync plugin
+ * https://github.com/pantheon-systems/terminus-rsync-plugin
  */
 
 namespace Pantheon\TerminusGetLogs\Commands;
