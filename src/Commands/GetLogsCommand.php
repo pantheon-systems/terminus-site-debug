@@ -13,7 +13,8 @@ use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
 
-class GetLogsCommand extends TerminusCommand implements SiteAwareInterface {
+class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
+{
     use SiteAwareTrait;
 
     protected $info;
@@ -56,11 +57,11 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface {
 
         // Loop through the record and download the logs.
         foreach($dns_records as $record) {
-          $app_server = $record['ip'];
-          $dir = $dest . '/' . $app_server;
+            $app_server = $record['ip'];
+            $dir = $dest . '/' . $app_server;
 
           if (!file_exists($dir)) {
-            mkdir($dir);
+              mkdir($dir);
           }
 
           $this->passthru("rsync $rsyncOptionString --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server:logs/*.log $dir >/dev/null 2>&1");
