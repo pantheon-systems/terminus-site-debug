@@ -1,9 +1,10 @@
-# Terminus Rsync Plugin
+# Terminus Get Logs Plugin
 
 [![Terminus v1.x Compatible](https://img.shields.io/badge/terminus-v1.x-green.svg)](https://github.com/pantheon-systems/terminus-secrets-plugin/tree/1.x)
 
 Terminus Plugin that allows to download all logs from a specific environment of a [Pantheon](https://www.pantheon.io) sites.
-This will also pull logs on an environment with multiple containers.
+
+This will also pull logs on an environment with __multiple containers__.
 
 Learn more about Terminus and Terminus Plugins at:
 [https://pantheon.io/docs/terminus/plugins/](https://pantheon.io/docs/terminus/plugins/)
