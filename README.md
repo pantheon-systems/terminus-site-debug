@@ -37,6 +37,3 @@ mkdir -p ~/.terminus/plugins
 cd ~/.terminus/plugins
 git clone https://github.com/jfussion/terminus-get-logs.git
 ```
-
-## Help
-Use `terminus help <rsync>` to get help on this command.
