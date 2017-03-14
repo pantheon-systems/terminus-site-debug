@@ -80,6 +80,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
               mkdir($dir, 0777, true);
           }
 
+          $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server:logs/*.log $dir"]);
           $this->passthru("rsync $rsync_options-zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server:logs/*.log $dir >/dev/null 2>&1");
         }
     }
