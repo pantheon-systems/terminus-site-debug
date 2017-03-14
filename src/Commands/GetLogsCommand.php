@@ -39,7 +39,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         'php-slow',
         'pyinotify',
         'watcher',
-        'new-relic',
+        'newrelic',
     ];
 
     /**
