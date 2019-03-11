@@ -43,9 +43,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     ];
 
     /**
-     * Pull all logs
+     * Download the logs.
      *
-     * @command get-logs
+     * @command logs:get
+     * @aliases lg:get
      */
     public function getLogs($site_env_id, $dest = null,
         $options = ['exclude' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'new-relic' => false,]) {
@@ -144,4 +145,82 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         return $exclude;
     }
+
+    /**
+     * Parse logs.
+     * 
+     * @command logs:parse
+     * @aliases lg:parse
+     * 
+     * string $type
+     *   Type of logs.
+     * 
+     * string $keyword
+     *   What kind of logs to check.
+     */
+    public function parseLogs($siteenv, $type, $keyword) {
+        $this->logParser($siteenv, $type, $keyword);
+    }
+
+    /**
+     * Log parser.
+     */
+    public function logParser($siteenv, $type, $keyword) {
+
+        $base = '/Users/geraldvillorente/Debug/';
+
+        list($site, $env) = explode('.', $siteenv);
+
+        $dirs = array_filter(glob($base . $site . '/' . $env . '/*'), 'is_dir');
+
+        print_r($dirs);
+
+        foreach ($dirs as $dir) {
+            // Get the log file.
+            $log = $dir . '/' . $type . ".log";
+
+            if (file_exists($log)) {
+                $handle = fopen($log, 'r');
+
+                echo "From " . $log . "\n";
+                
+                // Scan possible matches in the logs.
+                if ($handle) {
+                    while (!feof($handle)) {
+                        $buffer = fgets($handle);
+                        if (strpos($buffer, $keyword) !== FALSE)
+                            $matches[] = $buffer;
+                    }
+                    fclose($handle);
+
+                    // Return the matches.
+                    if (is_array($matches)) {
+                        foreach ($matches as $match) {
+                            echo "--------------------------\n";
+                            echo $match;
+                        }
+                        echo "--------------------------\n";
+                    }
+                    else {
+                        echo "No matches found.\n";
+                    }
+
+                    // Make sure the data placeholder is clear before the next loop.
+                    unset($matches);
+                } 
+
+                // Terminate the operation.
+                exit(); 
+            }
+            throw new TerminusException('Unimplemented status {status} for domain {domain}.'));
+            //exit("Invalid arguments. Please make sure that the parameters are correct.");
+        }
+    }
 }
+
+
+/**
+ * TODO:
+ * 
+ *    * Logs on the other file is being ignored by the script. Make sure that the script is able to return all the matches in the logs.
+ */
