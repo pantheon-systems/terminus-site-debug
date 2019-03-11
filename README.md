@@ -48,5 +48,5 @@ For help installing, see [Manage Plugins](https://pantheon.io/docs/terminus/plug
 ```
 mkdir -p ~/.terminus/plugins
 cd ~/.terminus/plugins
-git clone https://github.com/jfussion/terminus-get-logs.git
+git clone https://github.com/geraldvillorente/terminus-logs.git
 ```
