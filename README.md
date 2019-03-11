@@ -17,18 +17,31 @@ This plugin requires no configuration to use.
 
 Download all logs from `dev`.
 ```
-terminus get-logs my_site.dev
+terminus logs:get my_site.dev
 ```
 
 **Only** download nginx-access.log and nginx-error.log logs.
 ```
-terminus get-logs my_site.dev --nginx-access --nginx-error
+terminus logs:get my_site.dev --nginx-access --nginx-error
 ```
 
 **Exclude** nginx-access.log and nginx-error.log from download.
 ```
-terminus get-logs my_site.dev --exclude --nginx-access --nginx-error
+terminus logs:get my_site.dev --exclude --nginx-access --nginx-error
 ```
+
+## Parsing Logs
+
+Search **nginx-access** logs with 301 status code.
+```
+terminus logs:parse mysite.env nginx-access "301"
+```
+
+Search **php-error** logs with 301 "Uncaught PHP Exception" error.
+```
+terminus logs:parse mysite.env php-error "Uncaught PHP Exception"
+```
+
 
 ## Installation
 For help installing, see [Manage Plugins](https://pantheon.io/docs/terminus/plugins/)
