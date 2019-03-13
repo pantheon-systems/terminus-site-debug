@@ -1,5 +1,5 @@
 {
-    "name": "jfussion/terminus-get-logs",
+    "name": "geraldvillorente/terminus-logs",
     "description": "Get server logs on all appservers in a specific environment.",
     "type": "terminus-plugin",
     "autoload": {
@@ -7,7 +7,7 @@
     },
     "extra": {
         "terminus": {
-            "compatible-version": "1.*"
+            "compatible-version": "^1|^2"
         }
     }
 }
