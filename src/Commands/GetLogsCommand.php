@@ -96,7 +96,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
     }
 
-    private function generate_rsync_options($options) {
+    private function generate_rsync_options($options) 
+    {
       $rsync_options = '';
       $exclude = $this->parse_exclude($options);
 
@@ -107,7 +108,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
       return $rsync_options;
     }
 
-    private function parse_exclude($options) {
+    private function parse_exclude($options) 
+    {
         $exclude = [];
 
         // Parse option for exclude or include-only option.
@@ -158,14 +160,30 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * string $keyword
      *   What kind of logs to check.
      */
-    public function parseLogs($siteenv, $type, $keyword) {
+    public function parseLogs($siteenv, $type, $keyword) 
+    {
         $this->logParser($siteenv, $type, $keyword);
+    }
+
+    /**
+     * Define logs directory.
+     * 
+     * @command logs:set:dir
+     * @aliases lsd
+     * 
+     * The parameter should be an absolute path.
+     */
+    public function setLogsDir($dir) 
+    {
+        $this->passthru("mkdir $dir");
+        print "Terminus logs directory is now set to: $dir";
     }
 
     /**
      * Log parser.
      */
-    public function logParser($siteenv, $type, $keyword) {
+    public function logParser($siteenv, $type, $keyword) 
+    {
 
         $base = '/Users/geraldvillorente/Debug/';
 
@@ -210,10 +228,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                 } 
 
                 // Terminate the operation.
-                exit(); 
+                exit("Operation done!."); 
             }
-            throw new TerminusException('Unimplemented status {status} for domain {domain}.'));
-            //exit("Invalid arguments. Please make sure that the parameters are correct.");
+            //throw new TerminusException('Unimplemented status {status} for domain {domain}.', ['command' => $command, 'status' => $result]);
+            exit("Invalid arguments. Please make sure that the parameters are correct.");
         }
     }
 }
