@@ -7,6 +7,8 @@
  * https://github.com/pantheon-systems/terminus-rsync-plugin
  */
 
+
+
 namespace Pantheon\TerminusGetLogs\Commands;
 
 use Consolidation\OutputFormatters\StructuredData\PropertyList;
@@ -15,6 +17,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
+
 
 class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 {
@@ -41,6 +44,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         'watcher',
         'newrelic',
     ];
+
+    private $config_path = NULL;
 
     /**
      * Download the logs.
@@ -169,14 +174,68 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * Define logs directory.
      * 
      * @command logs:set:dir
-     * @aliases lsd
+     * @aliases logsd
      * 
      * The parameter should be an absolute path.
      */
     public function setLogsDir($dir) 
     {
+        // Load the environment variables.
+        $this->loadEnvVars();
+
+        // Verify if the $dir already exist.
+        if (is_dir($dir))
+        {
+            // Set the environment variable to the existing logs directory.
+            if (!getenv('TERMINUS_LOGS_DIR'))
+            {
+                $this->setEnv($dir, 'term-config');
+
+                // Output the logs directory path after the operation.
+                print "Terminus logs directory is now set to: " . getenv('TERMINUS_LOGS_DIR') . "\n";
+                exit();
+            }
+            else 
+            {
+                print "Terminus logs directory already exist. \n";
+                exit();
+            }
+        }
+        else{
+            // Reset the environment variable (TERMINUS_LOGS_DIR) to the new directory.
+            if (getenv('TERMINUS_LOGS_DIR'))
+            {
+                $this->resetEnv('term-config');
+            }
+        }
+
+        // Create the logs directory.
         $this->passthru("mkdir $dir");
-        print "Terminus logs directory is now set to: $dir";
+
+        // Set the environment variable.
+        $this->setEnv($dir, 'term-config');
+
+        // Output the logs directory path after the operation.
+        print "Terminus logs directory is now set to: " . getenv('TERMINUS_LOGS_DIR') . "\n";
+    }
+
+    /**
+     * @command logs:info
+     * @aliases logsi
+     */
+    public function terminusLogsInfo() 
+    {
+        // Load the environment variables.
+        $this->loadEnvVars();
+     
+        if (getenv('TERMINUS_LOGS_DIR')) 
+        {
+            print "---------------------------------------------------------------------------------------------------------------------------\n";
+            print "Terminus logs directory: " . getenv('TERMINUS_LOGS_DIR') . "\n";
+            print "---------------------------------------------------------------------------------------------------------------------------\n";
+            exit();
+        }
+        print "Terminus logs directory is not setup yet. \n";
     }
 
     /**
@@ -186,6 +245,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     {
 
         $base = '/Users/geraldvillorente/Debug/';
+
+        print_r($_ENV["TERMINUS_LOGS_DIR"]);
 
         list($site, $env) = explode('.', $siteenv);
 
@@ -232,6 +293,40 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
             //throw new TerminusException('Unimplemented status {status} for domain {domain}.', ['command' => $command, 'status' => $result]);
             exit("Invalid arguments. Please make sure that the parameters are correct.");
+        }
+    }
+
+    /**
+     * Sync the environment variables.
+     */
+    private function loadEnvVars()
+    {
+        // Sync the newly created environment variable to systems environment variables.
+        require dirname(__FILE__) . '/' . '../../vendor/autoload.php';
+        $dotenv = \Dotenv\Dotenv::create(__DIR__, 'term-config');
+        $dotenv->load();
+    }
+
+    /**
+     * Set environment variable.
+     */
+    private function setEnv($dir, $config) 
+    {
+        $f = @fopen(dirname(__FILE__) . '/' . $config, 'wb');
+        fwrite($f, "TERMINUS_LOGS_DIR=$dir");
+        fclose($f);
+    }
+
+    /**
+     * Reset environment variable.
+     */
+    private function resetEnv($config)
+    {
+        $f = @fopen(dirname(__FILE__) . '/' . $config, 'r+');
+        if ($f !== false) 
+        {
+            ftruncate($f, 0);
+            fclose($f);
         }
     }
 }
