@@ -9,5 +9,8 @@
         "terminus": {
             "compatible-version": "^1|^2"
         }
+    },
+    "require": {
+        "vlucas/phpdotenv": "^3.3"
     }
 }
