@@ -243,16 +243,18 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function logParser($siteenv, $type, $keyword) 
     {
+        // Load the environment variables.
+        $this->loadEnvVars();
 
-        $base = '/Users/geraldvillorente/Debug/';
-
-        print_r($_ENV["TERMINUS_LOGS_DIR"]);
+        $base_path = getenv('TERMINUS_LOGS_DIR');
 
         list($site, $env) = explode('.', $siteenv);
 
-        $dirs = array_filter(glob($base . $site . '/' . $env . '/*'), 'is_dir');
+        $dirs = array_filter(glob($base_path . $site . '/' . $env . '/*'), 'is_dir');
 
         print_r($dirs);
+
+        exit();
 
         foreach ($dirs as $dir) {
             // Get the log file.
