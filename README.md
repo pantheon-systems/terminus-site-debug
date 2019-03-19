@@ -50,3 +50,9 @@ mkdir -p ~/.terminus/plugins
 cd ~/.terminus/plugins
 git clone https://github.com/geraldvillorente/terminus-logs.git
 ```
+
+## Configuration
+To configure the logs directory.
+```
+terminus logs:set:dir /path/to/logs/directory
+```
