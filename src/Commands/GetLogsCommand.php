@@ -235,17 +235,24 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function terminusLogsInfo() 
     {
-        // Load the environment variables.
-        $this->loadEnvVars();
-     
-        if (getenv('TERMINUS_LOGS_DIR')) 
+        $status = $this->checkConfigFile();
+
+        if ($status == 'set')
         {
-            print "---------------------------------------------------------------------------------------------------------------------------\n";
-            print "Terminus logs directory: " . getenv('TERMINUS_LOGS_DIR') . "\n";
-            print "---------------------------------------------------------------------------------------------------------------------------\n";
-            exit();
+            // Load the environment variables.
+            $this->loadEnvVars();
+        
+            if (getenv('TERMINUS_LOGS_DIR')) 
+            {
+                print "---------------------------------------------------------------------------------------------------------------------------\n";
+                print "Terminus logs directory: " . getenv('TERMINUS_LOGS_DIR') . "\n";
+                print "---------------------------------------------------------------------------------------------------------------------------\n";
+                exit();
+            }
+            print "Terminus logs directory is not setup yet. \n";
         }
-        print "Terminus logs directory is not setup yet. \n";
+
+        print "Configuration has not been set. Please run the 'logs:set:dir' command.\n";
     }
 
     /**
