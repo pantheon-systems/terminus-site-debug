@@ -32,6 +32,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     public function __construct()
     {
         parent::__construct();
+
+        $this->configFile = 'term-config';
     }
 
     private $logs_filename = [
@@ -46,6 +48,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     ];
 
     private $config_path = NULL;
+    public static $configFile = 'term-config';
+
 
     /**
      * Download the logs.
@@ -180,40 +184,46 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function setLogsDir($dir) 
     {
+        $status = $this->checkConfigFile();
+        
+        switch ($status)
+        {
+            case '404':
+                // Creat if config file don't exist.
+                $this->createConfigFile();
+
+                // Set the environment variable.
+                $this->setEnv($dir, $this->configFile);
+                break;
+
+            case 'empty':
+                // Set the environment variable.
+                $this->setEnv($dir, $this->configFile);
+                break;
+
+            case 'set':
+                // Reset the environment variable (TERMINUS_LOGS_DIR) to the new directory.
+                $this->resetEnv($this->configFile);
+    
+                // Set the environment variable.
+                $this->setEnv($dir, $this->configFile);
+                break;
+        }
+        
         // Load the environment variables.
         $this->loadEnvVars();
 
-        // Verify if the $dir already exist.
-        if (is_dir($dir))
+        if (getenv('TERMINUS_LOGS_DIR'))
         {
-            // Set the environment variable to the existing logs directory.
-            if (!getenv('TERMINUS_LOGS_DIR'))
+            // Verify if the $dir already exist.
+            if (is_dir($dir))
             {
-                $this->setEnv($dir, 'term-config');
-
-                // Output the logs directory path after the operation.
-                print "Terminus logs directory is now set to: " . getenv('TERMINUS_LOGS_DIR') . "\n";
-                exit();
+                print "Terminus logs directory already exist. Configuration has been updated.\n";
             }
-            else 
-            {
-                print "Terminus logs directory already exist. \n";
-                exit();
+            else{
+                $this->passthru("mkdir $dir");
             }
         }
-        else{
-            // Reset the environment variable (TERMINUS_LOGS_DIR) to the new directory.
-            if (getenv('TERMINUS_LOGS_DIR'))
-            {
-                $this->resetEnv('term-config');
-            }
-        }
-
-        // Create the logs directory.
-        $this->passthru("mkdir $dir");
-
-        // Set the environment variable.
-        $this->setEnv($dir, 'term-config');
 
         // Output the logs directory path after the operation.
         print "Terminus logs directory is now set to: " . getenv('TERMINUS_LOGS_DIR') . "\n";
@@ -244,7 +254,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     public function logParser($siteenv, $type, $keyword) 
     {
         // Load the environment variables.
-        $this->loadEnvVars();
+        $this->loadEnvVars('term-config');
 
         $base_path = getenv('TERMINUS_LOGS_DIR');
 
@@ -312,9 +322,9 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Set environment variable.
      */
-    private function setEnv($dir, $config) 
+    private function setEnv($dir) 
     {
-        $f = @fopen(dirname(__FILE__) . '/' . $config, 'wb');
+        $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'wb');
         fwrite($f, "TERMINUS_LOGS_DIR=$dir");
         fclose($f);
     }
@@ -322,14 +332,46 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Reset environment variable.
      */
-    private function resetEnv($config)
+    private function resetEnv()
     {
-        $f = @fopen(dirname(__FILE__) . '/' . $config, 'r+');
+        $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'r+');
         if ($f !== false) 
         {
             ftruncate($f, 0);
             fclose($f);
         }
+    }
+
+    /**
+     * Check config file.
+     */
+    private function checkConfigFile()
+    {
+        $status = 'set';
+        $config = dirname(__FILE__) . '/' . $this->configFile;
+
+        // Check if $this->configFile already exist.
+        if (!file_exists($config))
+        {
+            $status = '404';
+        }
+
+        // Check if $this->configFile is empty.
+        if (file_exists($config) && filesize($config) == 0)
+        {
+            $status = 'empty';
+        }
+
+        return $status;
+    }
+
+    /** 
+     * Create the config file.
+     */
+    private function createConfigFile()
+    {
+        $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'wb');
+        fclose($f);
     }
 }
 
