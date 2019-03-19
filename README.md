@@ -52,7 +52,7 @@ git clone https://github.com/geraldvillorente/terminus-logs.git
 ```
 
 ## Configuration
-To configure the logs directory.
+To configure the logs directory. This is one time only.
 ```
 terminus logs:set:dir /path/to/logs/directory
 ```
