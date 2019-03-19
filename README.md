@@ -56,3 +56,7 @@ To configure the logs directory. This is one time only.
 ```
 terminus logs:set:dir /path/to/logs/directory
 ```
+Or
+```
+terminus logsd /path/to/logs/directory
+```
