@@ -48,8 +48,6 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     ];
 
     private $config_path = NULL;
-    public static $configFile = 'term-config';
-
 
     /**
      * Download the logs.
@@ -59,6 +57,16 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function getLogs($site_env_id, $dest = null,
         $options = ['exclude' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'new-relic' => false,]) {
+        
+        // Get the logs directory.
+        $this->loadEnvVars();
+
+        // Get the default logs directory.
+        if (getenv('TERMINUS_LOGS_DIR'))
+        {
+            $logsPath = getenv('TERMINUS_LOGS_DIR');
+        }
+         
         // Get env_id and site_id.
         list($site, $env) = $this->getSiteEnv($site_env_id);
         $env_id = $env->getName();
@@ -72,8 +80,9 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         // Set destination to cwd if not specified.
         if (!$dest) {
-            $dest = $siteInfo['name'] . '/' . $env_id;
+            $dest = $logsPath . '/'. $siteInfo['name'] . '/' . $env_id;
         }
+
 
         // Lists of files to be excluded.
         $rsync_options = $this->generate_rsync_options($options);
@@ -171,7 +180,16 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function parseLogs($siteenv, $type, $keyword) 
     {
-        $this->logParser($siteenv, $type, $keyword);
+        // Load the environment variables.
+        $this->loadEnvVars();
+
+        if (getenv('TERMINUS_LOGS_DIR'))
+        {
+            $this->logParser($siteenv, $type, $keyword);
+            exit();
+        }
+
+        print "No configuration found.\n";
     }
 
     /**
@@ -261,17 +279,18 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     public function logParser($siteenv, $type, $keyword) 
     {
         // Load the environment variables.
-        $this->loadEnvVars('term-config');
+        $this->loadEnvVars();
 
+        // Get the logs directory
         $base_path = getenv('TERMINUS_LOGS_DIR');
 
         list($site, $env) = explode('.', $siteenv);
 
-        $dirs = array_filter(glob($base_path . $site . '/' . $env . '/*'), 'is_dir');
+        $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
         print_r($dirs);
 
-        exit();
+        //exit();
 
         foreach ($dirs as $dir) {
             // Get the log file.
