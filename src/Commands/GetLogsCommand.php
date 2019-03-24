@@ -263,7 +263,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             if (getenv('TERMINUS_LOGS_DIR')) 
             {
                 print "---------------------------------------------------------------------------------------------------------------------------\n";
-                print "Terminus logs directory: " . getenv('TERMINUS_LOGS_DIR') . "\n";
+                print "Terminus logs directory: \033[32m" . getenv('TERMINUS_LOGS_DIR') . "\033[0m \n";
                 print "---------------------------------------------------------------------------------------------------------------------------\n";
                 exit();
             }
@@ -271,6 +271,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         print "Configuration has not been set. Please run the 'logs:set:dir' command.\n";
+        exit();
     }
 
     /**
@@ -289,8 +290,6 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
         print_r($dirs);
-
-        //exit();
 
         foreach ($dirs as $dir) {
             // Get the log file.
