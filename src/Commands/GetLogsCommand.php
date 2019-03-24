@@ -414,10 +414,3 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         return $line . "\n";
     }
 }
-
-
-/**
- * TODO:
- * 
- *    * Logs on the other file is being ignored by the script. Make sure that the script is able to return all the matches in the logs.
- */
