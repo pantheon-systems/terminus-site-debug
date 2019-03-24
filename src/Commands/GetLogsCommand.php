@@ -34,6 +34,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         parent::__construct();
 
         $this->configFile = 'term-config';
+        $this->width = exec("echo $(/usr/bin/tput cols)");
     }
 
     private $logs_filename = [
@@ -262,9 +263,9 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         
             if (getenv('TERMINUS_LOGS_DIR')) 
             {
-                print "---------------------------------------------------------------------------------------------------------------------------\n";
+                print $this->line();
                 print "Terminus logs directory: \033[32m" . getenv('TERMINUS_LOGS_DIR') . "\033[0m \n";
-                print "---------------------------------------------------------------------------------------------------------------------------\n";
+                print $this->line();
                 exit();
             }
             print "Terminus logs directory is not setup yet. \n";
@@ -289,7 +290,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
-        print_r($dirs);
+        //print_r($dirs);
 
         foreach ($dirs as $dir) {
             // Get the log file.
@@ -297,39 +298,40 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
             if (file_exists($log)) {
                 $handle = fopen($log, 'r');
-
-                echo "From " . $log . "\n";
                 
                 // Scan possible matches in the logs.
                 if ($handle) {
                     while (!feof($handle)) {
                         $buffer = fgets($handle);
                         if (strpos($buffer, $keyword) !== FALSE)
-                            $matches[] = $buffer;
+                            $container[$log][] = $buffer;
                     }
                     fclose($handle);
-
-                    // Return the matches.
-                    if (is_array($matches)) {
-                        foreach ($matches as $match) {
-                            echo "--------------------------\n";
-                            echo $match;
-                        }
-                        echo "--------------------------\n";
-                    }
-                    else {
-                        echo "No matches found.\n";
-                    }
-
-                    // Make sure the data placeholder is clear before the next loop.
-                    unset($matches);
                 } 
-
-                // Terminate the operation.
-                exit("Operation done!."); 
+                // Make sure the data placeholder is clear before the next loop.
+                //unset($matches);
+                //exit(); 
             }
             //throw new TerminusException('Unimplemented status {status} for domain {domain}.', ['command' => $command, 'status' => $result]);
-            exit("Invalid arguments. Please make sure that the parameters are correct.");
+            //exit("Invalid arguments. Please make sure that the parameters are correct.");
+        }
+
+        // Return the matches.
+        if (is_array($container)) {
+            foreach ($container as $i => $matches) {
+                print "From \033[32m" . $i . "\033[0m log file. \n";
+                print $this->line('=');
+                foreach ($matches as $match)
+                {
+                    //print $this->line();
+                    print $match;
+                    print $this->line('-');
+                }
+                echo "\n";
+            }
+        }
+        else {
+            echo "No matches found.\n";
         }
     }
 
@@ -397,6 +399,19 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     {
         $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'wb');
         fclose($f);
+    }
+
+    /**
+     * Line separator.
+     */
+    private function line($separator) 
+    {
+        for ($i = 1; $i <= $this->width; $i++)
+        {
+            ($separator == '-') ? $line .= "-" : $line .= "=";
+        }
+
+        return $line . "\n";
     }
 }
 
