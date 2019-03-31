@@ -341,7 +341,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                 }
                 echo "\n";
             }
-            print sizeof($count) . " results found.\n";
+            print sizeof($count) . " results matched found.\n";
         }
         else {
             echo "No matches found.\n";
