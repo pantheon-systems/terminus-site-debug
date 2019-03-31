@@ -263,9 +263,9 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         
             if (getenv('TERMINUS_LOGS_DIR')) 
             {
-                print $this->line();
+                print $this->line('-');
                 print "Terminus logs directory: \033[32m" . getenv('TERMINUS_LOGS_DIR') . "\033[0m \n";
-                print $this->line();
+                print $this->line('-');
                 exit();
             }
             print "Terminus logs directory is not setup yet. \n";
@@ -312,7 +312,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                 //unset($matches);
                 //exit(); 
             }
-            //throw new TerminusException('Unimplemented status {status} for domain {domain}.', ['command' => $command, 'status' => $result]);
+            //throw new TerminusException('Invalid arguments {arg} for domain {domain}.', ['command' => $command, 'status' => $result]);
             //exit("Invalid arguments. Please make sure that the parameters are correct.");
         }
 
