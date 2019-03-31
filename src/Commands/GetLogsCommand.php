@@ -179,7 +179,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * string $keyword
      *   What kind of logs to check.
      */
-    public function parseLogs($siteenv, $type, $keyword, $date_or_time_range) 
+    public function parseLogs($siteenv, $type, $keyword, $date_or_time_range = "") 
     {
         // Load the environment variables.
         $this->loadEnvVars();
@@ -278,7 +278,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Log parser.
      */
-    public function logParser($siteenv, $type, $keyword, $date_or_time_range) 
+    public function logParser($siteenv, $type, $keyword, $date_or_time) 
     {
         // Load the environment variables.
         $this->loadEnvVars();
@@ -290,8 +290,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
         //print_r($dirs);
-        
-        $date_or_time = $date_or_time_range;
+        // @Todo make a universal date parameter.
+        $formatted_date_filter = $this->convertDate($type, $date_or_time);
         
         foreach ($dirs as $dir) {
             // Get the log file.
@@ -303,8 +303,16 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                 if ($handle) {
                     while (!feof($handle)) {
                         $buffer = fgets($handle);
-                        if (strpos($buffer, $keyword) !== FALSE && strpos($buffer, $date_or_time))
+
+                        if (!empty($date_or_time)){
+                          if (strpos($buffer, $keyword) !== FALSE && strpos($buffer, $date_or_time)) {
                             $container[$log][] = $buffer;
+                          }
+                        }
+                        else {
+                          if (strpos($buffer, $date_or_time) == FALSE)
+                            $container[$log][] = $buffer;
+                        }
                     }
                     fclose($handle);
                 } 
@@ -318,20 +326,39 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         // Return the matches.
         if (is_array($container)) {
+
             foreach ($container as $i => $matches) {
                 print "From \033[32m" . $i . "\033[0m log file. \n";
                 print $this->line('=');
+                $count = [];
+
                 foreach ($matches as $match)
                 {
+                    $count[] = $match;
                     //print $this->line();
                     print $match;
                     print $this->line('-');
                 }
                 echo "\n";
             }
+            print sizeof($count) . " results found.\n";
         }
         else {
             echo "No matches found.\n";
+        }
+    }
+
+    /**
+     * Format date and time in the server logs
+     */
+    public function convertDate($type, $date_n_time) {
+        $convert = $date_n_time;
+
+        if ($type == 'nginx-access' || 'nginx-error') {
+
+        }
+        elseif($tpe == 'php-error' || 'php-fpm-error' || 'php-slow') {
+
         }
     }
 
