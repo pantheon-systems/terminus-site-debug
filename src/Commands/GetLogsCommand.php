@@ -179,14 +179,14 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * string $keyword
      *   What kind of logs to check.
      */
-    public function parseLogs($siteenv, $type, $keyword) 
+    public function parseLogs($siteenv, $type, $keyword, $date_or_time_range) 
     {
         // Load the environment variables.
         $this->loadEnvVars();
 
         if (getenv('TERMINUS_LOGS_DIR'))
         {
-            $this->logParser($siteenv, $type, $keyword);
+            $this->logParser($siteenv, $type, $keyword, $date_or_time_range);
             exit();
         }
 
@@ -278,11 +278,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Log parser.
      */
-    public function logParser($siteenv, $type, $keyword) 
+    public function logParser($siteenv, $type, $keyword, $date_or_time_range) 
     {
         // Load the environment variables.
         $this->loadEnvVars();
-
         // Get the logs directory
         $base_path = getenv('TERMINUS_LOGS_DIR');
 
@@ -291,19 +290,20 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
         //print_r($dirs);
-
+        
+        $date_or_time = $date_or_time_range;
+        
         foreach ($dirs as $dir) {
             // Get the log file.
             $log = $dir . '/' . $type . ".log";
 
             if (file_exists($log)) {
                 $handle = fopen($log, 'r');
-                
                 // Scan possible matches in the logs.
                 if ($handle) {
                     while (!feof($handle)) {
                         $buffer = fgets($handle);
-                        if (strpos($buffer, $keyword) !== FALSE)
+                        if (strpos($buffer, $keyword) !== FALSE && strpos($buffer, $date_or_time))
                             $container[$log][] = $buffer;
                     }
                     fclose($handle);
