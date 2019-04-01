@@ -179,14 +179,14 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * string $keyword
      *   What kind of logs to check.
      */
-    public function parseLogs($siteenv, $type, $keyword, $date_or_time_range = "") 
+    public function parseLogs($siteenv, $options = ['type' => '', 'keyword' => '', 'since' => '', 'until' => '']) 
     {
         // Load the environment variables.
         $this->loadEnvVars();
 
         if (getenv('TERMINUS_LOGS_DIR'))
         {
-            $this->logParser($siteenv, $type, $keyword, $date_or_time_range);
+            $this->logParser($siteenv, $options);
             exit();
         }
 
@@ -278,7 +278,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Log parser.
      */
-    public function logParser($siteenv, $type, $keyword, $date_or_time) 
+    public function logParser($siteenv, $options) 
     {
         // Load the environment variables.
         $this->loadEnvVars();
@@ -291,43 +291,96 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         //print_r($dirs);
         // @Todo make a universal date parameter.
-        $formatted_date_filter = $this->convertDate($type, $date_or_time);
+        $formatted_date_filter = $this->convertDate($options['type'], $options['since']);
         
         foreach ($dirs as $dir) {
             // Get the log file.
-            $log = $dir . '/' . $type . ".log";
+            if ($options['type'] == 'all') {
+                if ($handle = opendir($dir)) {
+                    while (false !== ($entry = readdir($handle))) {
+                        if ($entry != "." && $entry != "..") {
+                            $log = $dir . '/' . $entry;
 
-            if (file_exists($log)) {
-                $handle = fopen($log, 'r');
-                // Scan possible matches in the logs.
-                if ($handle) {
-                    while (!feof($handle)) {
-                        $buffer = fgets($handle);
+                            if (file_exists($log)) {
+                                $handle = fopen($log, 'r');
+                                // Scan possible matches in the logs.
+                                if ($handle) {
+                                    while (!feof($handle)) {
+                                        $buffer = fgets($handle);
 
-                        if (!empty($date_or_time)){
-                          if (strpos($buffer, $keyword) !== FALSE && strpos($buffer, $date_or_time)) {
-                            $container[$log][] = $buffer;
-                          }
-                        }
-                        else {
-                          if (strpos($buffer, $date_or_time) == FALSE)
-                            $container[$log][] = $buffer;
+                                        if (!empty($options['since'])){
+                                            if (strpos($buffer, $options['keyword']) !== FALSE && strpos($buffer, $options['since'])) {
+                                                $container[$log][] = $buffer;
+                                            }
+                                        }
+                                        else {
+                                        if (strpos($buffer, $options['since']) == FALSE)
+                                            $container[$log][] = $buffer;
+                                        }
+                                    }
+                                    fclose($handle);
+                                } 
+
+                                // Make sure the data placeholder is clear before the next loop.
+                                //unset($matches);
+                                //exit(); 
+                            }
+                            //throw new TerminusException('Invalid arguments {arg} for domain {domain}.', ['command' => $command, 'status' => $result]);
+                            //exit("Invalid arguments. Please make sure that the parameters are correct.");
                         }
                     }
-                    fclose($handle);
-                } 
-                // Make sure the data placeholder is clear before the next loop.
-                //unset($matches);
-                //exit(); 
+                
+                    closedir($handle);
+                }
             }
-            //throw new TerminusException('Invalid arguments {arg} for domain {domain}.', ['command' => $command, 'status' => $result]);
-            //exit("Invalid arguments. Please make sure that the parameters are correct.");
+            else 
+            {
+
+                $log = $dir . '/' . $options['type'] . ".log";
+
+                if (file_exists($log)) 
+                {
+                    $handle = fopen($log, 'r');
+                    // Scan possible matches in the logs.
+                    if ($handle) {
+                        while (!feof($handle)) 
+                        {
+                            $buffer = fgets($handle);
+
+                            if (!empty($options['since']))
+                            {
+                                if (strpos($buffer, $options['keyword']) !== FALSE && strpos($buffer, $options['since'])) 
+                                {
+                                    $container[$log][] = $buffer;
+                                }
+                            }
+                            else 
+                            {
+                                if (strpos($buffer, $options['since']) == FALSE) 
+                                {
+                                    $container[$log][] = $buffer;
+                                }
+                            }
+                        }
+                        fclose($handle);
+                    } 
+
+                    // Make sure the data placeholder is clear before the next loop.
+                    //unset($matches);
+                    //exit(); 
+                }
+                //throw new TerminusException('Invalid arguments {arg} for domain {domain}.', ['command' => $command, 'status' => $result]);
+                //exit("Invalid arguments. Please make sure that the parameters are correct.");
+            }
         }
+
+        //exit();
 
         // Return the matches.
         if (is_array($container)) {
 
-            foreach ($container as $i => $matches) {
+            foreach ($container as $i => $matches) 
+            {
                 print "From \033[32m" . $i . "\033[0m log file. \n";
                 print $this->line('=');
                 $count = [];
@@ -341,9 +394,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                 }
                 echo "\n";
             }
-            print sizeof($count) . " results matched found.\n";
+            //print sizeof($count) . " results matched found.\n";
         }
-        else {
+        else 
+        {
             echo "No matches found.\n";
         }
     }
