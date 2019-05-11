@@ -399,12 +399,13 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         if (is_array($container)) 
         {
 
+            $count = [];
+
             foreach ($container as $i => $matches) 
             {
                 $this->output()->writeln("From <info>" . $i . "</> file.");
                 $this->output()->writeln($this->line('='));
-                $count = [];
-
+                
                 foreach ($matches as $match)
                 {
                     $count[] = $match;
@@ -412,7 +413,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->output()->writeln($this->line('-'));
                 }
             }
-            //print sizeof($count) . " results matched found.\n";
+            $this->log()->notice(sizeof($count) . " results matched found.");
         }
         else 
         {
