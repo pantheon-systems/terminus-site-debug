@@ -193,7 +193,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             exit();
         }
 
-        print "No configuration found.\n";
+        $this->log()->notice("No configuration found. Please run <info>terminus logs:set:dir</> command.");
     }
 
     /**
@@ -240,7 +240,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             // Verify if the $dir already exist.
             if (is_dir($dir))
             {
-                print "Terminus logs directory already exist. Configuration has been updated.\n";
+                $this->log()->notice("Terminus logs directory already exist. Configuration has been updated.");
             }
             else{
                 $this->passthru("mkdir $dir");
