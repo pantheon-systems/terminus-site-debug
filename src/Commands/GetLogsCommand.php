@@ -248,7 +248,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         // Output the logs directory path after the operation.
-        print "Terminus logs directory is now set to: " . getenv('TERMINUS_LOGS_DIR') . "\n";
+        $this->log()->notice("Terminus logs directory is now set to: " . getenv('TERMINUS_LOGS_DIR'));
     }
 
     /**
@@ -387,24 +387,22 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
             foreach ($container as $i => $matches) 
             {
-                print "From \033[32m" . $i . "\033[0m log file. \n";
-                print $this->line('=');
+                $this->output()->writeln("From <info>" . $i . "</>log file");
+                $this->output()->writeln($this->line('='));
                 $count = [];
 
                 foreach ($matches as $match)
                 {
                     $count[] = $match;
-                    //print $this->line();
-                    print $match;
-                    print $this->line('-');
+                    $this->output()->writeln($match);
+                    $this->output()->writeln($this->line('-'));
                 }
-                echo "\n";
             }
             //print sizeof($count) . " results matched found.\n";
         }
         else 
         {
-            echo "No matches found.\n";
+            $this->log()->notice("No matches found.");
         }
     }
 
