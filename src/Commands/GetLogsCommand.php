@@ -299,30 +299,42 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         // @Todo make a universal date parameter.
         $formatted_date_filter = $this->convertDate($options['type'], $options['since']);
         
-        foreach ($dirs as $dir) {
+        foreach ($dirs as $dir) 
+        {
             // Get the log file.
-            if ($options['type'] == 'all') {
-                if ($res = opendir($dir)) {
-
-                    while (false !== ($entry = readdir($res))) {
-                        if ($entry != "." && $entry != "..") {
+            if ($options['type'] == 'all') 
+            {
+                if ($res = opendir($dir)) 
+                {
+                    while (false !== ($entry = readdir($res))) 
+                    {
+                        if ($entry != "." && $entry != "..") 
+                        {
                             $log = $dir . '/' . $entry;
 
-                            if (file_exists($log)) {
+                            if (file_exists($log)) 
+                            {
                                 $handle = fopen($log, 'r');
                                 // Scan possible matches in the logs.
-                                if ($handle) {
-                                    while (!feof($handle)) {
+                                if ($handle) 
+                                {
+                                    while (!feof($handle)) 
+                                    {
                                         $buffer = fgets($handle);
 
-                                        if (!empty($options['since'])){
-                                            if (strpos($buffer, $options['keyword']) !== FALSE && strpos($buffer, $options['since'])) {
+                                        if (!empty($options['since']))
+                                        {
+                                            if (strpos($buffer, $options['keyword']) !== FALSE && strpos($buffer, $options['since'])) 
+                                            {
                                                 $container[$log][] = $buffer;
                                             }
                                         }
-                                        else {
-                                        if (strpos($buffer, $options['keyword']) !== FALSE)
-                                            $container[$log][] = $buffer;
+                                        else 
+                                        {
+                                            if (strpos($buffer, $options['keyword']) !== FALSE) 
+                                            {
+                                                $container[$log][] = $buffer;
+                                            }
                                         }
                                     }
                                     fclose($handle);
@@ -384,7 +396,8 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         //exit();
 
         // Return the matches.
-        if (is_array($container)) {
+        if (is_array($container)) 
+        {
 
             foreach ($container as $i => $matches) 
             {
