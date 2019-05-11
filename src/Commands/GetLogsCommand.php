@@ -302,8 +302,9 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         foreach ($dirs as $dir) {
             // Get the log file.
             if ($options['type'] == 'all') {
-                if ($handle = opendir($dir)) {
-                    while (false !== ($entry = readdir($handle))) {
+                if ($res = opendir($dir)) {
+
+                    while (false !== ($entry = readdir($res))) {
                         if ($entry != "." && $entry != "..") {
                             $log = $dir . '/' . $entry;
 
@@ -320,7 +321,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                                             }
                                         }
                                         else {
-                                        if (strpos($buffer, $options['since']) == FALSE)
+                                        if (strpos($buffer, $options['keyword']) !== FALSE)
                                             $container[$log][] = $buffer;
                                         }
                                     }
@@ -336,7 +337,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                         }
                     }
                 
-                    closedir($handle);
+                    closedir($res);
                 }
             }
             else 
@@ -362,7 +363,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                             }
                             else 
                             {
-                                if (strpos($buffer, $options['since']) == FALSE) 
+                                if (strpos($buffer, $options['keyword']) !== FALSE) 
                                 {
                                     $container[$log][] = $buffer;
                                 }
@@ -387,7 +388,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
             foreach ($container as $i => $matches) 
             {
-                $this->output()->writeln("From <info>" . $i . "</>log file");
+                $this->output()->writeln("From <info>" . $i . "</> file.");
                 $this->output()->writeln($this->line('='));
                 $count = [];
 
