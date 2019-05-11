@@ -54,7 +54,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * Download the logs.
      *
      * @command logs:get
-     * @aliases lg:get
+     * @aliases lg
      */
     public function getLogs($site_env_id, $dest = null,
         $options = ['exclude' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'new-relic' => false,]) {
@@ -178,15 +178,18 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * string $keyword
      *   What kind of logs to check.
+     * 
+     * @usage <site>.<env> -- <command> Runs the Drush command <command> remotely on <site>'s <env> environment.
+     * @usage <site>.<env> --progress -- <command> Runs a Drush command with a progress bar
      */
-    public function parseLogs($siteenv, $options = ['type' => '', 'keyword' => '', 'since' => '', 'until' => '']) 
+    public function parseLogs($site_env, $options = ['type' => '', 'keyword' => '', 'since' => '', 'until' => '']) 
     {
         // Load the environment variables.
         $this->loadEnvVars();
 
         if (getenv('TERMINUS_LOGS_DIR'))
         {
-            $this->logParser($siteenv, $options);
+            $this->logParser($site_env, $options);
             exit();
         }
 
@@ -263,16 +266,19 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         
             if (getenv('TERMINUS_LOGS_DIR')) 
             {
-                print $this->line('-');
-                print "Terminus logs directory: \033[32m" . getenv('TERMINUS_LOGS_DIR') . "\033[0m \n";
-                print $this->line('-');
-                exit();
+                $this->output()->writeln($this->line('-'));
+                $this->output()->writeln("Logs directory: <info>" . getenv('TERMINUS_LOGS_DIR') . "</>");
+                $this->output()->writeln($this->line('-'));
             }
-            print "Terminus logs directory is not setup yet. \n";
+            else 
+            {
+                $this->log()->notice('Terminus logs directory is not setup yet.');
+            }
         }
-
-        print "Configuration has not been set. Please run the 'logs:set:dir' command.\n";
-        exit();
+        else 
+        {
+            $this->log()->notice('Configuration file is missing. Please run <info>terminus logs:set:dir</> command.');
+        }
     }
 
     /**
@@ -492,6 +498,6 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             ($separator == '-') ? $line .= "-" : $line .= "=";
         }
 
-        return $line . "\n";
+        return $line;
     }
 }
