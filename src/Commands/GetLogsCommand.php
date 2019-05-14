@@ -17,14 +17,22 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
+use Pantheon\Terminus\Commands\Remote\DrushCommand;
 
 
 class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
 
-    // protected $info;
-    // protected $tmpDirs = [];
+    /**
+     * @var Environment
+     */
+    private $environment;
+
+    /**
+     * @var Site
+     */
+    private $site;
 
     /**
      * Object constructor
@@ -173,14 +181,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:parse
      * @aliases lg:parse
      * 
-     * string $type
-     *   Type of logs.
-     * 
-     * string $keyword
-     *   What kind of logs to check.
-     * 
-     * @usage <site>.<env> -- <command> Runs the Drush command <command> remotely on <site>'s <env> environment.
-     * @usage <site>.<env> --progress -- <command> Runs a Drush command with a progress bar
+     * @usage <site>.<env> --type TYPE --keyword "keyword"
      */
     public function parseLogs($site_env, $options = ['type' => '', 'keyword' => '', 'since' => '', 'until' => '']) 
     {
@@ -193,7 +194,26 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             exit();
         }
 
-        $this->log()->notice("No configuration found. Please run <info>terminus logs:set:dir</> command.");
+        $this->log()->error("No configuration found. Please run <info>terminus logs:set:dir</> command.");
+    }
+
+    /**
+     * List files.
+     * @command logs:list
+     * @aliases ls
+     * 
+     * @param string $site_env
+     * 
+     * @return string Command output
+     */
+    public function logsList($site_env) 
+    {
+        //$this->test();
+        print_r($this->defineSiteEnv($site_env));
+        //print_r($this->getSiteEnv($site_env));
+        //die();6
+        //$env = $this->prepareEnvironment($site_env);
+        //print_r($env);
     }
 
     /**
@@ -277,7 +297,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
         else 
         {
-            $this->log()->notice('Configuration file is missing. Please run <info>terminus logs:set:dir</> command.');
+            $this->log()->error('Configuration file is missing. Please run <info>terminus logs:set:dir</> command.');
         }
     }
 
@@ -413,7 +433,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->output()->writeln($this->line('-'));
                 }
             }
-            $this->log()->notice(sizeof($count) . " results matched found.");
+            $this->log()->notice(sizeof($count) . " " . ((sizeof($count) > 1) ? 'results' : 'result') . " matched found.");
         }
         else 
         {
@@ -422,6 +442,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
+     * 
      * Format date and time in the server logs
      */
     public function convertDate($type, $date_n_time) {
@@ -430,7 +451,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         if ($type == 'nginx-access' || 'nginx-error') {
 
         }
-        elseif($tpe == 'php-error' || 'php-fpm-error' || 'php-slow') {
+        elseif($type == 'php-error' || 'php-fpm-error' || 'php-slow') {
 
         }
     }
@@ -512,5 +533,15 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         return $line;
+    }
+
+    /** 
+     * Define site environment properties.
+     * 
+     * @param string Site and environment in a format of <site>.<env>.
+     */
+    private function defineSiteEnv($site_env)
+    {
+        list($this->site, $this->environment) = $this->getSiteEnv($site_env);
     }
 }
