@@ -208,12 +208,21 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function logsList($site_env) 
     {
-        //$this->test();
-        print_r($this->defineSiteEnv($site_env));
-        //print_r($this->getSiteEnv($site_env));
-        //die();6
-        //$env = $this->prepareEnvironment($site_env);
-        //print_r($env);
+        if ($this->getLogsDir())
+        {
+            list($this->site, $this->environment) = explode('.', $site_env);
+            $site = $this->site;
+            $envi = $this->environment;
+
+            $path = $this->getLogsDir() . '/' . $site . '/'. $envi;
+            $dirs = array_diff(scandir($path), array('.DS_Store', '.', '..'));
+
+            foreach ($dirs as $dir) {
+                $this->output()->writeln($path . '/' . $dir);
+                print_r(array_diff(scandir($path . '/' . $dir), array('.DS_Store', '.', '..')));
+                $this->output()->writeln('');
+            }
+        } 
     }
 
     /**
@@ -272,6 +281,25 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
+     * Get logs directory.
+     */
+    private function getLogsDir() 
+    {
+        // Load the environment variables.
+        $this->loadEnvVars();
+
+        if (getenv('TERMINUS_LOGS_DIR')) 
+        {
+            return getenv('TERMINUS_LOGS_DIR');
+        }
+        else 
+        {
+            $this->log()->notice('Terminus logs directory is not setup yet.');
+            return NULL;
+        }
+    }
+
+    /**
      * @command logs:info
      * @aliases logsi
      */
@@ -311,7 +339,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Get the logs directory
         $base_path = getenv('TERMINUS_LOGS_DIR');
 
-        list($site, $env) = explode('.', $siteenv);
+        list($site, $env) = array_pad(explode('.', $site_env_id), 2, null);
 
         $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
