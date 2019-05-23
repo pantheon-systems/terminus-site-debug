@@ -65,7 +65,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @aliases lg
      */
     public function getLogs($site_env_id, $dest = null,
-        $options = ['exclude' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'new-relic' => false,]) {
+        $options = ['exclude' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'new-relic' => true,]) {
         
         // Get the logs directory.
         $this->loadEnvVars();
@@ -210,9 +210,9 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     {
         if ($this->getLogsDir())
         {
-            list($this->site, $this->environment) = explode('.', $site_env);
-            $site = $this->site;
-            $envi = $this->environment;
+            $this->defineSiteEnv($site_env);
+            $site = $this->site->get('name');
+            $envi = $this->environment->id;
 
             $path = $this->getLogsDir() . '/' . $site . '/'. $envi;
             $dirs = array_diff(scandir($path), array('.DS_Store', '.', '..'));
@@ -332,20 +332,23 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Log parser.
      */
-    public function logParser($siteenv, $options) 
+    private function logParser($site_env, $options) 
     {
+        print_r($options);
         // Load the environment variables.
         $this->loadEnvVars();
+
         // Get the logs directory
         $base_path = getenv('TERMINUS_LOGS_DIR');
 
-        list($site, $env) = array_pad(explode('.', $site_env_id), 2, null);
+        // Define site and environment.
+        list($this->site, $this->environment) = array_pad(explode('.', $site_env), 2, null);
 
-        $dirs = array_filter(glob($base_path . '/' . $site . '/' . $env . '/*'), 'is_dir');
+        // Get the logs per environment.
+        $dirs = array_filter(glob($base_path . '/' . $this->site . '/' . $this->environment. '/*'), 'is_dir');
 
-        //print_r($dirs);
         // @Todo make a universal date parameter.
-        $formatted_date_filter = $this->convertDate($options['type'], $options['since']);
+        $date_filter = $this->convertDate($options['type'], $options['since']);
         
         foreach ($dirs as $dir) 
         {
@@ -387,13 +390,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                                     }
                                     fclose($handle);
                                 } 
-
-                                // Make sure the data placeholder is clear before the next loop.
-                                //unset($matches);
-                                //exit(); 
                             }
-                            //throw new TerminusException('Invalid arguments {arg} for domain {domain}.', ['command' => $command, 'status' => $result]);
-                            //exit("Invalid arguments. Please make sure that the parameters are correct.");
                         }
                     }
                 
@@ -402,12 +399,12 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
             else 
             {
-
                 $log = $dir . '/' . $options['type'] . ".log";
 
                 if (file_exists($log)) 
                 {
                     $handle = fopen($log, 'r');
+
                     // Scan possible matches in the logs.
                     if ($handle) {
                         while (!feof($handle)) 
@@ -431,22 +428,13 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
                         }
                         fclose($handle);
                     } 
-
-                    // Make sure the data placeholder is clear before the next loop.
-                    //unset($matches);
-                    //exit(); 
                 }
-                //throw new TerminusException('Invalid arguments {arg} for domain {domain}.', ['command' => $command, 'status' => $result]);
-                //exit("Invalid arguments. Please make sure that the parameters are correct.");
             }
         }
-
-        //exit();
 
         // Return the matches.
         if (is_array($container)) 
         {
-
             $count = [];
 
             foreach ($container as $i => $matches) 
