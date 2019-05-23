@@ -42,6 +42,11 @@ Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 terminus logs:parse mysite.env php-error "Uncaught PHP Exception"
 ```
 
+## Logs listing
+To list all the log files.
+```
+terminus logs:list
+```
 
 ## Installation
 For help installing, see [Manage Plugins](https://pantheon.io/docs/terminus/plugins/)
