@@ -12,5 +12,8 @@
     },
     "require": {
         "vlucas/phpdotenv": "^3.3"
+    },
+    "require-dev": {
+        "league/climate": "^3.2"
     }
 }

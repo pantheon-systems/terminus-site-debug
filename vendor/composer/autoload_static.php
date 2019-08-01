@@ -14,11 +14,16 @@ class ComposerStaticInitc99ab27c2d8eb11a2a4c36badabffe07
         'S' => 
         array (
             'Symfony\\Polyfill\\Ctype\\' => 23,
+            'Seld\\CliPrompt\\' => 15,
         ),
         'P' => 
         array (
-            'Pantheon\\TerminusRsync\\' => 23,
+            'Psr\\Log\\' => 8,
             'Pantheon\\TerminusGetLogs\\' => 25,
+        ),
+        'L' => 
+        array (
+            'League\\CLImate\\' => 15,
         ),
         'D' => 
         array (
@@ -31,13 +36,21 @@ class ComposerStaticInitc99ab27c2d8eb11a2a4c36badabffe07
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Pantheon\\TerminusRsync\\' => 
+        'Seld\\CliPrompt\\' => 
         array (
-            0 => __DIR__ . '/..' . '/pantheon-systems/terminus-rsync-plugin/src',
+            0 => __DIR__ . '/..' . '/seld/cli-prompt/src',
+        ),
+        'Psr\\Log\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
         ),
         'Pantheon\\TerminusGetLogs\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
+        ),
+        'League\\CLImate\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/league/climate/src',
         ),
         'Dotenv\\' => 
         array (

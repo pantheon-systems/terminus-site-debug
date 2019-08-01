@@ -7,7 +7,9 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
-    'Pantheon\\TerminusRsync\\' => array($vendorDir . '/pantheon-systems/terminus-rsync-plugin/src'),
+    'Seld\\CliPrompt\\' => array($vendorDir . '/seld/cli-prompt/src'),
+    'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
     'Pantheon\\TerminusGetLogs\\' => array($baseDir . '/src'),
+    'League\\CLImate\\' => array($vendorDir . '/league/climate/src'),
     'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),
 );

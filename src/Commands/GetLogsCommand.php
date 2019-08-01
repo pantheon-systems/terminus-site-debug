@@ -18,6 +18,7 @@ use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
 use Pantheon\Terminus\Commands\Remote\DrushCommand;
+use Pantheon\TerminusGetLogs\Commands\NewRelicCommand;
 
 
 class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
@@ -64,7 +65,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:get
      * @aliases lg
      */
-    public function getLogs($site_env_id, $dest = null,
+    public function GetLogs($site_env_id, $dest = null,
         $options = ['exclude' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'new-relic' => true,]) {
         
         // Get the logs directory.
@@ -94,7 +95,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
 
 
         // Lists of files to be excluded.
-        $rsync_options = $this->generate_rsync_options($options);
+        $rsync_options = $this->RsyncOptions($options);
 
         // Get all appservers' IP address
         $dns_records = dns_get_record("appserver.$env_id.$site_id.drush.in", DNS_A);
@@ -123,10 +124,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
     }
 
-    private function generate_rsync_options($options) 
+    private function RsyncOptions($options) 
     {
       $rsync_options = '';
-      $exclude = $this->parse_exclude($options);
+      $exclude = $this->ParseExclude($options);
 
       foreach($exclude as $item) {
         $rsync_options .= "--exclude $item ";
@@ -135,7 +136,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
       return $rsync_options;
     }
 
-    private function parse_exclude($options) 
+    private function ParseExclude($options) 
     {
         $exclude = [];
 
@@ -181,16 +182,22 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:parse
      * @aliases lg:parse
      * 
-     * @usage <site>.<env> --type TYPE --keyword "keyword"
+     * @usage <site>.<env> --type TYPE --filter="keyword"
      */
-    public function parseLogs($site_env, $options = ['type' => '', 'keyword' => '', 'since' => '', 'until' => '']) 
+    public function ParseLogs($site_env, $options = ['type' => '', 'filter' => '', 'filter' => '', 'since' => '', 'until' => '']) 
     {
         // Load the environment variables.
-        $this->loadEnvVars();
+        $this->LoadEnvVars();
 
         if (getenv('TERMINUS_LOGS_DIR'))
         {
-            $this->logParser($site_env, $options);
+            $this->LogParser($site_env, $options);
+
+            $this->output()->writeln('');
+            $this->output()->writeln('Fetching NewRelic data.....');
+            $this->output()->writeln('');
+
+            $this->NewRelicHealthCheck($site_env);
             exit();
         }
 
@@ -206,15 +213,15 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @return string Command output
      */
-    public function logsList($site_env) 
+    public function LogsList($site_env) 
     {
-        if ($this->getLogsDir())
+        if ($this->GetLogsDir())
         {
-            $this->defineSiteEnv($site_env);
+            $this->DefineSiteEnv($site_env);
             $site = $this->site->get('name');
             $envi = $this->environment->id;
 
-            $path = $this->getLogsDir() . '/' . $site . '/'. $envi;
+            $path = $this->GetLogsDir() . '/' . $site . '/'. $envi;
             $dirs = array_diff(scandir($path), array('.DS_Store', '.', '..'));
 
             foreach ($dirs as $dir) {
@@ -233,36 +240,36 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * The parameter should be an absolute path.
      */
-    public function setLogsDir($dir) 
+    public function SetLogsDir($dir) 
     {
-        $status = $this->checkConfigFile();
+        $status = $this->CheckConfigFile();
         
         switch ($status)
         {
             case '404':
                 // Creat if config file don't exist.
-                $this->createConfigFile();
+                $this->CreateConfigFile();
 
                 // Set the environment variable.
-                $this->setEnv($dir, $this->configFile);
+                $this->SetEnv($dir, $this->configFile);
                 break;
 
             case 'empty':
                 // Set the environment variable.
-                $this->setEnv($dir, $this->configFile);
+                $this->SetEnv($dir, $this->configFile);
                 break;
 
             case 'set':
                 // Reset the environment variable (TERMINUS_LOGS_DIR) to the new directory.
-                $this->resetEnv($this->configFile);
+                $this->ResetEnv($this->configFile);
     
                 // Set the environment variable.
-                $this->setEnv($dir, $this->configFile);
+                $this->SetEnv($dir, $this->configFile);
                 break;
         }
         
         // Load the environment variables.
-        $this->loadEnvVars();
+        $this->LoadEnvVars();
 
         if (getenv('TERMINUS_LOGS_DIR'))
         {
@@ -283,10 +290,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Get logs directory.
      */
-    private function getLogsDir() 
+    private function GetLogsDir() 
     {
         // Load the environment variables.
-        $this->loadEnvVars();
+        $this->LoadEnvVars();
 
         if (getenv('TERMINUS_LOGS_DIR')) 
         {
@@ -303,14 +310,14 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:info
      * @aliases logsi
      */
-    public function terminusLogsInfo() 
+    public function TerminusLogsInfo() 
     {
-        $status = $this->checkConfigFile();
+        $status = $this->CheckConfigFile();
 
         if ($status == 'set')
         {
             // Load the environment variables.
-            $this->loadEnvVars();
+            $this->LoadEnvVars();
         
             if (getenv('TERMINUS_LOGS_DIR')) 
             {
@@ -332,11 +339,11 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Log parser.
      */
-    private function logParser($site_env, $options) 
+    private function LogParser($site_env, $options) 
     {
         print_r($options);
         // Load the environment variables.
-        $this->loadEnvVars();
+        $this->LoadEnvVars();
 
         // Get the logs directory
         $base_path = getenv('TERMINUS_LOGS_DIR');
@@ -348,7 +355,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
         $dirs = array_filter(glob($base_path . '/' . $this->site . '/' . $this->environment. '/*'), 'is_dir');
 
         // @Todo make a universal date parameter.
-        $date_filter = $this->convertDate($options['type'], $options['since']);
+        $date_filter = $this->ConvertDate($options['type'], $options['since']);
         
         foreach ($dirs as $dir) 
         {
@@ -460,8 +467,10 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * 
      * Format date and time in the server logs
+     * 
+     * TODO: Roald
      */
-    public function convertDate($type, $date_n_time) {
+    public function ConvertDate($type, $date_n_time) {
         $convert = $date_n_time;
 
         if ($type == 'nginx-access' || 'nginx-error') {
@@ -475,7 +484,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Sync the environment variables.
      */
-    private function loadEnvVars()
+    private function LoadEnvVars()
     {
         // Sync the newly created environment variable to systems environment variables.
         require dirname(__FILE__) . '/' . '../../vendor/autoload.php';
@@ -486,7 +495,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Set environment variable.
      */
-    private function setEnv($dir) 
+    private function SetEnv($dir) 
     {
         $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'wb');
         fwrite($f, "TERMINUS_LOGS_DIR=$dir");
@@ -496,7 +505,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Reset environment variable.
      */
-    private function resetEnv()
+    private function ResetEnv()
     {
         $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'r+');
         if ($f !== false) 
@@ -509,7 +518,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Check config file.
      */
-    private function checkConfigFile()
+    private function CheckConfigFile()
     {
         $status = 'set';
         $config = dirname(__FILE__) . '/' . $this->configFile;
@@ -532,7 +541,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     /** 
      * Create the config file.
      */
-    private function createConfigFile()
+    private function CreateConfigFile()
     {
         $f = @fopen(dirname(__FILE__) . '/' . $this->configFile, 'wb');
         fclose($f);
@@ -556,8 +565,17 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @param string Site and environment in a format of <site>.<env>.
      */
-    private function defineSiteEnv($site_env)
+    private function DefineSiteEnv($site_env)
     {
         list($this->site, $this->environment) = $this->getSiteEnv($site_env);
+    }
+
+    public function NewRelicHealthCheck($site_env) 
+    {
+        $this->DefineSiteEnv($site_env);
+        $site = $this->site->get('name');
+        $env = $this->environment->id;
+    
+        $this->passthru("terminus newrelic:healthcheck $site.$env");
     }
 }
