@@ -9,7 +9,7 @@
 
 
 
-namespace Pantheon\TerminusGetLogs\Commands;
+namespace Pantheon\TerminusSiteLogs\Commands;
 
 use Consolidation\OutputFormatters\StructuredData\PropertyList;
 use Pantheon\Terminus\Commands\TerminusCommand;
@@ -21,7 +21,7 @@ use Pantheon\Terminus\Commands\Remote\DrushCommand;
 use Pantheon\TerminusGetLogs\Commands\NewRelicCommand;
 
 
-class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
+class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
 
@@ -177,7 +177,7 @@ class GetLogsCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * Parse logs.
+     * Parse the logs.
      * 
      * @command logs:parse
      * @aliases lg:parse

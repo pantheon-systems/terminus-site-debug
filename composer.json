@@ -3,7 +3,7 @@
     "description": "Get server logs on all appservers in a specific environment.",
     "type": "terminus-plugin",
     "autoload": {
-        "psr-4": { "Pantheon\\TerminusGetLogs\\": "src" }
+        "psr-4": { "Pantheon\\TerminusSiteLogs\\": "src" }
     },
     "extra": {
         "terminus": {
