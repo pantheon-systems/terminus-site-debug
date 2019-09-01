@@ -3,7 +3,7 @@
  * This command will fetch an new relic overview of the project 
  * in a specific environment
  */
-namespace Pantheon\TerminusGetLogs\Commands;
+namespace Pantheon\TerminusSiteLogs\Commands;
 
 use Pantheon\Terminus\Commands\Site\SiteCommand;
 use Consolidation\OutputFormatters\StructuredData\PropertyList;
