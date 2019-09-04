@@ -191,10 +191,21 @@ class NewRelicCommand extends TerminusCommand implements SiteAwareInterface
 
         if ((!empty($reporting) OR $reporting != 'Not Reporting') AND isset($obj['application_summary'])) 
         {
-            $sum_obj = $obj['application_summary'];
+            // Put the unit after the value.
+            $apdex_score = ($obj['application_summary']['apdex_score'] <= 1) ? ' second' : ' seconds';
+            $apdex_target = ($obj['application_summary']['apdex_target'] <= 1) ? ' second' : ' seconds';
+            $nr_fetched_data = array(
+                'response_time' => $obj['application_summary']['response_time'] . ' ms',
+                'throughput' => $obj['application_summary']['throughput'] . ' rpm',
+                'error_rate' => $obj['application_summary']['error_rate'],
+                'apdex_target' => $obj['application_summary']['apdex_target'] . $apdex_target,
+                'apdex_score' => $obj['application_summary']['apdex_score'] . $apdex_score,
+                'host_count' => $obj['application_summary']['host_count'],
+                'instance_count' => $obj['application_summary']['instance_count'],
+            );    
             foreach ($arr_components as $key => $val) 
             {
-                if (array_key_exists($key, $sum_obj)) 
+                if (array_key_exists($key, $nr_fetched_data)) 
                 {
                     if ($key == 'response_time')
                     {
@@ -205,11 +216,12 @@ class NewRelicCommand extends TerminusCommand implements SiteAwareInterface
                         $val = 'Appserver Throughput';
                     }
 
-                    $items[$val] = $sum_obj[$key];
+                    $items[$val] = $nr_fetched_data[$key];
                 }
                 if (isset($obj['end_user_summary']))
                 {
                     $end_user_obj = $obj['end_user_summary'];
+                    print-r($end_user_obj);
                     if (array_key_exists($key, $end_user_obj)) 
                     {
                         if ($key == 'response_time')
