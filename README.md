@@ -30,12 +30,17 @@ terminus logs:get site_name.dev --exclude --nginx-access --nginx-error
 
 Search **nginx-access** logs with 301 status code.
 ```
-terminus logs:parse site_name.env nginx-access "301"
+terminus logs:parse site_name.env --type=nginx-access --filter="301"
 ```
 
 Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 ```
-terminus logs:parse site_name.env php-error "Uncaught PHP Exception"
+terminus logs:parse site_name.env --type=php-error --filter="Uncaught PHP Exception"
+```
+
+Search to all the logs.
+```
+terminus logs:parse site_name.env --type=all --filter="error"
 ```
 
 ## Logs listing
@@ -50,14 +55,4 @@ For help installing, see [Manage Plugins](https://pantheon.io/docs/terminus/plug
 mkdir -p ~/.terminus/plugins
 cd ~/.terminus/plugins
 git clone https://github.com/geraldvillorente/terminus-logs.git
-```
-
-## Configuration
-To configure the logs directory. This is one time only.
-```
-terminus logs:set:dir /path/to/logs/directory
-```
-Or
-```
-terminus logsd /path/to/logs/directory
 ```
