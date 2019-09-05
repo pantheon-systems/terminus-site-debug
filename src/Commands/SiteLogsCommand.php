@@ -7,8 +7,6 @@
  * https://github.com/pantheon-systems/terminus-rsync-plugin
  */
 
-
-
 namespace Pantheon\TerminusSiteLogs\Commands;
 
 use Consolidation\OutputFormatters\StructuredData\PropertyList;
@@ -201,8 +199,6 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $site = $this->site->get('name');
         $env = $this->environment->id;
 
-        // $this->test($this->input(), $this->output());
-
         if ($this->logPath . '/' . $site . '/' . $env)
         {
             $this->LogParser($site_env, $options);
@@ -355,7 +351,8 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $handle = fopen($log, 'r');
 
                     // Scan possible matches in the logs.
-                    if ($handle) {
+                    if ($handle) 
+                    {
                         while (!feof($handle)) 
                         {
                             $buffer = fgets($handle);
