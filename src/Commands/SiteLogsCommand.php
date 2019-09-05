@@ -58,6 +58,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Create the logs directory if not present.
         if (!is_dir($this->logPath))
         {
+            $this->log()->error('Logs directory not found.');
+            // Create the logs directory if not present.
+            $this->log()->notice('Creating logs directory.');
             mkdir($this->logPath, 0777, true);
         }
          
@@ -65,7 +68,6 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $this->DefineSiteEnv($site_env);
         $site = $this->site->get('name');
         $env = $this->environment->id;
-
         $env_id = $this->environment->get('id');
         $site_id = $this->site->get('id');
 
@@ -82,22 +84,41 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Lists of files to be excluded.
         $rsync_options = $this->RsyncOptions($options);
 
-        // Get all appservers' IP address
-        $dns_records = dns_get_record("appserver.$env_id.$site_id.drush.in", DNS_A);
+        // Get all appservers' IP address.
+        $appserver_dns_records = dns_get_record("appserver.$env_id.$site_id.drush.in", DNS_A);
+        // Get dbserver IP address.
+        $dbserver_dns_records = dns_get_record("dbserver.$env_id.$site_id.drush.in", DNS_A);
 
-        // Loop through the record and download the logs.
-        foreach($dns_records as $record) 
+        $this->log()->notice('Downloading logs from appserver...');
+        // Appserver - Loop through the record and download the logs.
+        foreach($appserver_dns_records as $appserver) 
         {
-            $app_server = $record['ip'];
-            $dir = $dest . '/' . $app_server;
+            $app_server_ip = $appserver['ip'];
+            $dir = $dest . '/' . $app_server_ip;
 
-          if (!is_dir($dir)) 
-          {
-              mkdir($dir, 0777, true);
-          }
+            if (!is_dir($dir)) 
+            {
+                mkdir($dir, 0777, true);
+            }
 
-          $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server:logs/*.log $dir"]);
-          $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server:logs/*.log $dir >/dev/null 2>&1");
+            $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/*.log $dir"]);
+            $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/*.log $dir >/dev/null 2>&1");
+        }
+
+        // DBserver - Loop through the record and download the logs.
+        foreach($dbserver_dns_records as $dbserver) 
+        {
+            $db_server_ip = $dbserver['ip'];
+            $dir = $dest . '/' . $db_server_ip;
+
+            if (!is_dir($dir)) 
+            {
+                mkdir($dir, 0777, true);
+            }
+
+            $this->log()->notice('Downloading logs from dbserver...');
+            $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$db_server_ip:logs/*.log $dir"]);
+            $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$db_server_ip:logs/*.log $dir >/dev/null 2>&1");
         }
     }
 
