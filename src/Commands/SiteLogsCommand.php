@@ -362,6 +362,16 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     closedir($res);
                 }
             }
+            else if ($options['type'] == 'mysql')
+            {
+                // Parse MySQL slow log.
+                if ('which pt-query-digest')
+                {
+                    $mysql_slow_log = $dir . '/' . "mysqld-slow-query.log";
+                    $this->passthru("pt-query-digest $mysql_slow_log");
+                    exit();
+                }
+            }
             else 
             {
                 $log = $dir . '/' . $options['type'] . ".log";
