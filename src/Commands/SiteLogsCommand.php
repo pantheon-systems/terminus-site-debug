@@ -31,9 +31,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     {
         parent::__construct();
 
-        $this->configFile = 'term-config';
         $this->width = exec("echo $(/usr/bin/tput cols)");
-
         $this->logPath = getenv('HOME') . '/.terminus/site-logs';
     }
 
@@ -54,7 +52,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:get
      * @aliases lg
      */
-    public function GetLogs($site_env_id, $dest = null,
+    public function GetLogs($site_env, $dest = null,
         $options = ['exclude' => true, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true,]) {
         
         // Create the logs directory if not present.
@@ -64,11 +62,12 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
          
         // Get env_id and site_id.
-        list($site, $env) = $this->getSiteEnv($site_env_id);
-        $env_id = $env->getName();
+        $this->DefineSiteEnv($site_env);
+        $site = $this->site->get('name');
+        $env = $this->environment->id;
 
-        $siteInfo = $site->serialize();
-        $site_id = $siteInfo['id'];
+        $env_id = $this->environment->get('id');
+        $site_id = $this->site->get('id');
 
         // Set src and files.
         $src = "$env_id.$site_id";
@@ -77,7 +76,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Set destination to cwd if not specified.
         if (!$dest) 
         {
-            $dest = $this->logPath . '/'. $siteInfo['name'] . '/' . $env_id;
+            $dest = $this->logPath . '/'. $site . '/' . $env;
         }
 
         // Lists of files to be excluded.
@@ -232,9 +231,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Check the existence of logs directory.
         if (is_dir($this->logPath))
         {
-            if (is_dir($this->logPath . '/' . $site . '/'. $envi))
+            $path = $this->logPath . '/' . $site . '/'. $envi;
+            if (is_dir($path))
             {
-                $path = $this->logPath . '/' . $site . '/'. $envi;
                 $dirs = array_diff(scandir($path), array('.DS_Store', '.', '..'));
 
                 $this->log()->notice('Listing all the downloaded logs.');
