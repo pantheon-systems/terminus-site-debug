@@ -212,7 +212,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
      */
-    public function ParseLogs($site_env, $options = ['parser' => 'php', 'type' => '', 'method' => '', 'filter' => '', 'since' => '', 'until' => '']) 
+    public function ParseLogs($site_env, $options = ['parser' => 'php', 'type' => '', 'method' => '', 'filter' => '', 'newrelic' => false, 'since' => '', 'until' => '']) 
     {
         // Get the site name and environment.
         $this->DefineSiteEnv($site_env);
@@ -222,12 +222,14 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         if ($this->logPath . '/' . $site . '/' . $env)
         {
             $this->LogParser($site_env, $options);
-
-            $this->output()->writeln('');
-            $this->output()->writeln('Fetching NewRelic data.....');
-            $this->output()->writeln('');
-
-            $this->NewRelicHealthCheck($site_env);
+            
+            if ($options['newrelic'])
+            {
+                $this->output()->writeln('');
+                $this->output()->writeln('Fetching NewRelic data.....');
+                $this->output()->writeln('');
+                $this->NewRelicHealthCheck($site_env);
+            }
             exit();
         }
 
@@ -314,7 +316,12 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         // @Todo make a universal date parameter.
         $date_filter = $this->ConvertDate($options['type'], $options['since']);
-        
+
+        if ($options['parser'] == 'shell')
+        {
+            $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
+        }
+
         foreach ($dirs as $dir) 
         {
             // Get the log file.
@@ -322,7 +329,40 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             {
                 if ($res = opendir($dir)) 
                 {
-                    $this->_LogsParserScanner($res, $options);
+                    while (false !== ($entry = readdir($res))) 
+                    {
+                        if ($entry != "." && $entry != "..") 
+                        {
+                            $log = $dir . '/' . $entry;
+                            if (file_exists($log)) 
+                            {
+                                $handle = fopen($log, 'r');
+                                // Scan possible matches in the logs.
+                                if ($handle) 
+                                {
+                                    while (!feof($handle)) 
+                                    {
+                                        $buffer = fgets($handle);
+                                        if (!empty($options['since']))
+                                        {
+                                            if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since'])) 
+                                            {
+                                                $container[$log][] = $buffer;
+                                            }
+                                        }
+                                        else 
+                                        {
+                                            if (strpos($buffer, $options['filter']) !== FALSE) 
+                                            {
+                                                $container[$log][] = $buffer;
+                                            }
+                                        }
+                                    }
+                                    fclose($handle);
+                                } 
+                            }
+                        }
+                    }
                     closedir($res);
                 }
             }
@@ -342,27 +382,53 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
             else if ($options['type'] == 'php-slow' && $options['parser'] == 'shell')
             {
-                // Parse php-slow log using *nix commands.
-                $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
-                if (('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
+                if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
-                    $php_slow_log = $dir . '/' . $options['type'] . '.log';
-                    
-                    switch ($options['method'])
+                    // Parse php-slow log using *nix commands.
+                    if (('which cat') && ('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
                     {
-                        case 'latest':
-                            $this->passthru("tail $php_slow_log");
-                            break;
-                        case 'grouped_by_function':
-                            $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
-                            break;
-                        default:
-                            $this->log()->notice("You've reached the beyond.");
+                        $php_slow_log = $dir . '/' . $options['type'] . '.log';
+                        $this->output()->writeln("From <info>" . $php_slow_log . "</> file.");
+                        
+                        switch ($options['method'])
+                        {
+                            case 'latest':
+                                $this->passthru("tail $php_slow_log");
+                                break;
+                            case 'grouped_by_function':
+                                $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
+                                break;
+                            case 'grouped_by_minute':
+                                $this->passthru("cat $php_slow_log | grep 'pool www' | cut -d' ' -f2 | sort | cut -d: -f1,2 | uniq -c");
+                                break;
+                            default:
+                                $this->log()->notice("You've reached the beyond.");
+                        }
+                    }
+                    else 
+                    {
+                        $this->log()->error("Required utilities are not installed.");
                     }
                 }
-                else 
+            }
+            else if ($options['type'] == 'nginx-access' && $options['parser'] == 'shell')
+            {
+                if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
-                    $this->log()->error("Required utilities are not installed.");
+                    // Parse php-slow log using *nix commands.
+                    if (('which cat') && ('which awk') && ('which uniq') && ('which sort'))
+                    {
+                        $nginx_access_log = $dir . '/' . $options['type'] . '.log';
+                        $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
+                        switch ($options['method'])
+                        {
+                            case 'grouped_by_ip':
+                                $this->passthru('cat ' . $nginx_access_log . '| awk -F\\" \'{print $8}\' | awk \'{print $1}\' | sort -n | uniq -c | sort -nr | head -20');
+                                break;
+                            default:
+                                $this->log()->notice("You've reached the beyond.");
+                        }
+                    }
                 }
             }
             else if ($options['type'] != 'all' && $options['parser'] == 'php')
@@ -373,7 +439,30 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 {
                     $handle = fopen($log, 'r');
 
-                    $this->_ScanMatchesHelper($handle, $options);
+                    if ($handle) 
+                    {
+                        $container = [];
+                        while (!feof($handle)) 
+                        {
+                            $buffer = fgets($handle);
+            
+                            if (!empty($options['since']))
+                            {
+                                if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since'])) 
+                                {
+                                    $container[$log][] = $buffer;
+                                }
+                            }
+                            else 
+                            {
+                                if (strpos($buffer, $options['filter']) !== FALSE) 
+                                {
+                                    $container[$log][] = $buffer;
+                                }
+                            }
+                        }
+                        fclose($handle);
+                    }
                 }
             }
             else 
@@ -384,27 +473,30 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         // Return the matches.
-        if (is_array(@$container)) 
+        if ($options['parser'] == 'php')
         {
-            $count = [];
-
-            foreach ($container as $i => $matches) 
+            if (is_array(@$container)) 
             {
-                $this->output()->writeln("From <info>" . $i . "</> file.");
-                $this->output()->writeln($this->line('='));
-                
-                foreach ($matches as $match)
+                $count = [];
+
+                foreach ($container as $i => $matches) 
                 {
-                    $count[] = $match;
-                    $this->output()->writeln($match);
-                    $this->output()->writeln($this->line('-'));
+                    $this->output()->writeln("From <info>" . $i . "</> file.");
+                    $this->output()->writeln($this->line('='));
+                    
+                    foreach ($matches as $match)
+                    {
+                        $count[] = $match;
+                        $this->output()->writeln($match);
+                        $this->output()->writeln($this->line('-'));
+                    }
                 }
+                $this->log()->notice(sizeof($count) . " " . ((sizeof($count) > 1) ? 'results' : 'result') . " matched found.");
             }
-            $this->log()->notice(sizeof($count) . " " . ((sizeof($count) > 1) ? 'results' : 'result') . " matched found.");
-        }
-        else 
-        {
-            $this->log()->notice("No matches found.");
+            else 
+            {
+                $this->log()->notice("No matches found.");
+            }
         }
     }
 
@@ -459,55 +551,5 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $env = $this->environment->id;
     
         $this->passthru("terminus newrelic:healthcheck $site.$env");
-    }
-
-    /**
-     * Log parser helper.
-     */
-    private function _LogsParserScanner($res, $options)
-    {
-        while (false !== ($entry = readdir($res))) 
-        {
-            if ($entry != "." && $entry != "..") 
-            {
-                $log = $dir . '/' . $entry;
-
-                if (file_exists($log)) 
-                {
-                    $handle = fopen($log, 'r');
-                    $this->_ScanMatchesHelper($handle, $options);
-                }
-            }
-        }
-    }
-
-    /**
-     * Scan for possible matches.
-     */
-    private function _ScanMatchesHelper($handle, $options) 
-    {
-        if ($handle) 
-        {
-            while (!feof($handle)) 
-            {
-                $buffer = fgets($handle);
-
-                if (!empty($options['since']))
-                {
-                    if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since'])) 
-                    {
-                        $container[$log][] = $buffer;
-                    }
-                }
-                else 
-                {
-                    if (strpos($buffer, $options['filter']) !== FALSE) 
-                    {
-                        $container[$log][] = $buffer;
-                    }
-                }
-            }
-            fclose($handle);
-        }
     }
 }
