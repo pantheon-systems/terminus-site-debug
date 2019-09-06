@@ -212,7 +212,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
      */
-    public function ParseLogs($site_env, $options = ['parser' => 'php', 'type' => '', 'method' => '', 'filter' => '', 'newrelic' => false, 'since' => '', 'until' => '']) 
+    public function ParseLogs($site_env, $options = ['parser' => 'php', 'type' => '', 'method' => '', 'uri' => '', 'filter' => '', 'newrelic' => false, 'since' => '', 'until' => '']) 
     {
         // Get the site name and environment.
         $this->DefineSiteEnv($site_env);
@@ -320,7 +320,26 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         if ($options['parser'] == 'shell')
         {
             $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
+            switch ($options['method'])
+            {
+                case 'grouped_by_ip':
+                    $this->log()->notice('Listing top visitors by IP.');
+                    break;
+                case 'group_by_response_code':
+                    $this->log()->notice('Listing access by response code.');
+                    break;
+                case 'group_by_404':
+                    $this->log()->notice('Listing top 404 visits.');
+                    break;
+                case 'group_by_502':
+                    $this->log()->notice('Listing top 502 visits.');
+                    break;
+                default:
+            }
         }
+
+        // Scanner storage.
+        $container = [];
 
         foreach ($dirs as $dir) 
         {
@@ -419,11 +438,30 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     if (('which cat') && ('which awk') && ('which uniq') && ('which sort'))
                     {
                         $nginx_access_log = $dir . '/' . $options['type'] . '.log';
+                        $uri = $options['uri'];
                         $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
                         switch ($options['method'])
                         {
                             case 'grouped_by_ip':
                                 $this->passthru('cat ' . $nginx_access_log . '| awk -F\\" \'{print $8}\' | awk \'{print $1}\' | sort -n | uniq -c | sort -nr | head -20');
+                                break;
+                            case 'grouped_by_response_code':
+                                $this->passthru("cat $nginx_access_log | cut -d '\"' -f3 | cut -d ' ' -f2 | sort | uniq -c | sort -rn");
+                                break;
+                            case 'grouped_by_404':
+                                $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
+                                break;
+                            case 'grouped_by_502':
+                                $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -r");
+                                break;
+                            case 'grouped_by_ip_accessing_502':
+                                $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk -F\\\" '($2 ~ \"/$uri\"){print $1}' | awk '{print $1}' | sort | uniq -c | sort -r");
+                                break;
+                            case 'grouped_by_top_404_php':
+                                $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk -F\\\" '($2 ~ \"^GET .*\\.php\")' | awk '{print $7}' | sort | uniq -c | sort -r | head -n 20");
+                                break;
+                            case 'grouped_by_most_requested_urls':
+                                $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
                                 break;
                             default:
                                 $this->log()->notice("You've reached the beyond.");
@@ -441,7 +479,6 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
                     if ($handle) 
                     {
-                        $container = [];
                         while (!feof($handle)) 
                         {
                             $buffer = fgets($handle);

@@ -32,6 +32,19 @@ Search **nginx-access** logs with 301 status code.
 ```
 terminus logs:parse site_name.env --type=nginx-access --filter="301"
 ```
+## Show how many times the IP visited the site.
+```
+terminus logs:parse site_name.env --type=nginx-access --parser=shell --method=grouped_by_ip
+```
+## Top response by HTTP status.
+```
+terminus logs:parse site_name.env --type=nginx-access --parser=shell --method=grouped_by_response_code
+```
+## Top 404 requests
+```
+terminus logs:parse site_name.env --type=nginx-access --parser=shell --method=grouped_by_404
+```
+
 
 Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 ```
