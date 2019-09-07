@@ -28,7 +28,7 @@ terminus logs:get site_name.dev --exclude --nginx-access --nginx-error
 
 ## Parsing Nginx Logs
 
-Search **nginx-access** logs with 301 status code via PHP.
+## Search **nginx-access** logs with 301 status code via PHP.
 ```
 terminus logs:parse site_name.env --type=nginx-access --filter="301" --php
 ```
@@ -53,15 +53,21 @@ terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=404
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
 ```
 
+## Parsing PHP Error Logs
 
 Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 ```
-terminus logs:parse site_name.env --type=php-error --filter="Uncaught PHP Exception"
+terminus logs:parse site_name.env --type=php-error --filter="Uncaught PHP Exception" --php
 ```
 
 Search to all the logs.
 ```
-terminus logs:parse site_name.env --type=all --filter="error"
+terminus logs:parse site_name.env --type=all --filter="error" --php
+```
+
+## Parsing MySQL Slow Log
+```
+terminus logs:parse site_name.env --type=mysql --shell
 ```
 
 ## Logs listing
