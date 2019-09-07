@@ -26,23 +26,31 @@ terminus logs:get site_name.dev --nginx-access --nginx-error
 terminus logs:get site_name.dev --exclude --nginx-access --nginx-error
 ```
 
-## Parsing Logs
+## Parsing Nginx Logs
 
-Search **nginx-access** logs with 301 status code.
+Search **nginx-access** logs with 301 status code via PHP.
 ```
-terminus logs:parse site_name.env --type=nginx-access --filter="301"
+terminus logs:parse site_name.env --type=nginx-access --filter="301" --php
 ```
 ## Show how many times the IP visited the site.
 ```
-terminus logs:parse site_name.env --type=nginx-access --parser=shell --method=grouped_by_ip
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=ip
 ```
 ## Top response by HTTP status.
 ```
-terminus logs:parse site_name.env --type=nginx-access --parser=shell --method=grouped_by_response_code
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=response-code
+```
+## Top 403 requests
+```
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=403
 ```
 ## Top 404 requests
 ```
-terminus logs:parse site_name.env --type=nginx-access --parser=shell --method=grouped_by_404
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=404
+```
+## Top 502 requests
+```
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
 ```
 
 

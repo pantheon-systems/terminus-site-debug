@@ -337,6 +337,15 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 case '502':
                     $this->log()->notice('Listing top 502 visits.');
                     break;
+                case 'ip-accessing-502':
+                    $this->log()->notice('Listing top 502 response by IP.');
+                    break;
+                case 'most-requested-urls':
+                    $this->log()->notice('Listing top requested urls.');
+                    break;
+                case 'php-404':
+                    $this->log()->notice('Listing top 404 accessing PHP file.');
+                    break;
                 default:
             }
         }
