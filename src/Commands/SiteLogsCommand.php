@@ -212,7 +212,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
      */
-    public function ParseLogs($site_env, $options = ['parser' => 'php', 'type' => '', 'method' => '', 'uri' => '', 'filter' => '', 'newrelic' => false, 'since' => '', 'until' => '']) 
+    public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '']) 
     {
         // Get the site name and environment.
         $this->DefineSiteEnv($site_env);
@@ -317,21 +317,24 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // @Todo make a universal date parameter.
         $date_filter = $this->ConvertDate($options['type'], $options['since']);
 
-        if ($options['parser'] == 'shell')
+        if ($options['shell'])
         {
             $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
-            switch ($options['method'])
+            switch ($options['grouped-by'])
             {
-                case 'grouped_by_ip':
+                case 'ip':
                     $this->log()->notice('Listing top visitors by IP.');
                     break;
-                case 'group_by_response_code':
+                case 'response-code':
                     $this->log()->notice('Listing access by response code.');
                     break;
-                case 'group_by_404':
+                case '403':
+                    $this->log()->notice('Listing top 403 visits.');
+                    break;
+                case '404':
                     $this->log()->notice('Listing top 404 visits.');
                     break;
-                case 'group_by_502':
+                case '502':
                     $this->log()->notice('Listing top 502 visits.');
                     break;
                 default:
@@ -344,7 +347,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         foreach ($dirs as $dir) 
         {
             // Get the log file.
-            if ($options['type'] == 'all' && $options['parser'] == 'php') 
+            if ($options['type'] == 'all' && $options['php']) 
             {
                 if ($res = opendir($dir)) 
                 {
@@ -385,7 +388,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     closedir($res);
                 }
             }
-            else if ($options['type'] == 'mysql' && $options['parser'] == 'shell')
+            else if ($options['type'] == 'mysql' && $options['shell'])
             {
                 // Parse MySQL slow log.
                 if ('which pt-query-digest')
@@ -399,7 +402,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->log()->error("You don't have Percona tool installed. If you're on MacOS you can install percona-toolkit using Brew.");
                 }
             }
-            else if ($options['type'] == 'php-slow' && $options['parser'] == 'shell')
+            else if ($options['type'] == 'php-slow' && $options['shell'])
             {
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
@@ -409,15 +412,15 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                         $php_slow_log = $dir . '/' . $options['type'] . '.log';
                         $this->output()->writeln("From <info>" . $php_slow_log . "</> file.");
                         
-                        switch ($options['method'])
+                        switch ($options['grouped-by'])
                         {
                             case 'latest':
                                 $this->passthru("tail $php_slow_log");
                                 break;
-                            case 'grouped_by_function':
+                            case 'function':
                                 $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
                                 break;
-                            case 'grouped_by_minute':
+                            case 'minute':
                                 $this->passthru("cat $php_slow_log | grep 'pool www' | cut -d' ' -f2 | sort | cut -d: -f1,2 | uniq -c");
                                 break;
                             default:
@@ -430,7 +433,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     }
                 }
             }
-            else if ($options['type'] == 'nginx-access' && $options['parser'] == 'shell')
+            else if ($options['type'] == 'nginx-access' && $options['shell'])
             {
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
@@ -440,27 +443,30 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                         $nginx_access_log = $dir . '/' . $options['type'] . '.log';
                         $uri = $options['uri'];
                         $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
-                        switch ($options['method'])
+                        switch ($options['grouped-by'])
                         {
-                            case 'grouped_by_ip':
+                            case 'ip':
                                 $this->passthru('cat ' . $nginx_access_log . '| awk -F\\" \'{print $8}\' | awk \'{print $1}\' | sort -n | uniq -c | sort -nr | head -20');
                                 break;
-                            case 'grouped_by_response_code':
+                            case 'response-code':
                                 $this->passthru("cat $nginx_access_log | cut -d '\"' -f3 | cut -d ' ' -f2 | sort | uniq -c | sort -rn");
                                 break;
-                            case 'grouped_by_404':
+                            case '403':
+                                $this->passthru("awk '($9 ~ /403/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
+                                break;
+                            case '404':
                                 $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
                                 break;
-                            case 'grouped_by_502':
+                            case '502':
                                 $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -r");
                                 break;
-                            case 'grouped_by_ip_accessing_502':
+                            case 'ip-accessing-502':
                                 $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk -F\\\" '($2 ~ \"/$uri\"){print $1}' | awk '{print $1}' | sort | uniq -c | sort -r");
                                 break;
-                            case 'grouped_by_top_404_php':
+                            case 'php-404':
                                 $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk -F\\\" '($2 ~ \"^GET .*\\.php\")' | awk '{print $7}' | sort | uniq -c | sort -r | head -n 20");
                                 break;
-                            case 'grouped_by_most_requested_urls':
+                            case 'most-requested-urls':
                                 $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
                                 break;
                             default:
@@ -469,7 +475,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     }
                 }
             }
-            else if ($options['type'] != 'all' && $options['parser'] == 'php')
+            else if ($options['type'] != 'all' && $options['php'])
             {
                 $log = $dir . '/' . $options['type'] . ".log";
 
@@ -510,7 +516,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         // Return the matches.
-        if ($options['parser'] == 'php')
+        if ($options['php'])
         {
             if (is_array(@$container)) 
             {
