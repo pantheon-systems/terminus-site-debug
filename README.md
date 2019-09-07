@@ -1,8 +1,10 @@
-# Terminus Get Logs Plugin
+# Terminus Site Debug Plugin
 
 [![Terminus v1.x Compatible](https://img.shields.io/badge/terminus-v1.x-green.svg)](https://github.com/geraldvillorente/terminus-logs/tree/1.x)
 
-Terminus Plugin that allows to download all logs from a specific environment of a [Pantheon](https://www.pantheon.io) sites.
+Terminus plugin that:
+* download site logs from a specific environment of a [Pantheon](https://www.pantheon.io) sites
+* parse the logs for debugging purposes
 
 This will also pull logs on an environment with __multiple containers__.
 
