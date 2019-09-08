@@ -28,7 +28,7 @@ terminus logs:get site_name.dev --nginx-access --nginx-error
 terminus logs:get site_name.dev --exclude --nginx-access --nginx-error
 ```
 
-## Parsing Nginx Logs
+## Parsing Nginx Access Logs
 
 ## Search **nginx-access** logs with 301 status code via PHP.
 ```
@@ -55,14 +55,24 @@ terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=404
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
 ```
 
+## Parsing Nginx Error Logs
+
+## Search nginx-error.log for access forbidden error.
+```
+terminus logs:parse site_name.env --type=nginx-error --filter="access forbidden" --shell
+```
+## Search nginx-error.log for SSL_shutdown error.
+```
+terminus logs:parse site_name.env --type=nginx-error --filter="SSL_shutdown" --shell
+```
+
 ## Parsing PHP Error Logs
 
-Search **php-error** logs with 301 "Uncaught PHP Exception" error.
+## Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 ```
 terminus logs:parse site_name.env --type=php-error --filter="Uncaught PHP Exception" --php
 ```
-
-Search to all the logs.
+## Search to all the logs.
 ```
 terminus logs:parse site_name.env --type=all --filter="error" --php
 ```
@@ -73,7 +83,8 @@ terminus logs:parse site_name.env --type=mysql --shell
 ```
 
 ## Logs listing
-To list all the log files.
+
+## To list all the log files.
 ```
 terminus logs:list site_name.env
 ```

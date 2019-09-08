@@ -323,28 +323,28 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             switch ($options['grouped-by'])
             {
                 case 'ip':
-                    $this->log()->notice('Listing top visitors by IP.');
+                    $this->log()->notice('Top visitors by IP.');
                     break;
                 case 'response-code':
-                    $this->log()->notice('Listing access by response code.');
+                    $this->log()->notice('Top access by response code.');
                     break;
                 case '403':
-                    $this->log()->notice('Listing top 403 visits.');
+                    $this->log()->notice('Top 403 requests.');
                     break;
                 case '404':
-                    $this->log()->notice('Listing top 404 visits.');
+                    $this->log()->notice('Top 404 requests.');
                     break;
                 case '502':
-                    $this->log()->notice('Listing top 502 visits.');
+                    $this->log()->notice('Top 502 requests.');
                     break;
                 case 'ip-accessing-502':
-                    $this->log()->notice('Listing top 502 response by IP.');
+                    $this->log()->notice('Top 502 requests by IP.');
                     break;
                 case 'most-requested-urls':
-                    $this->log()->notice('Listing top requested urls.');
+                    $this->log()->notice('Top most requested urls.');
                     break;
                 case 'php-404':
-                    $this->log()->notice('Listing top 404 accessing PHP file.');
+                    $this->log()->notice('Top 404 requests accessing PHP file.');
                     break;
                 default:
             }
@@ -433,7 +433,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                                 $this->passthru("cat $php_slow_log | grep 'pool www' | cut -d' ' -f2 | sort | cut -d: -f1,2 | uniq -c");
                                 break;
                             default:
-                                $this->log()->notice("You've reached the beyond.");
+                                $this->log()->notice("You've reached the great beyond.");
                         }
                     }
                     else 
@@ -461,7 +461,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                                 $this->passthru("cat $nginx_access_log | cut -d '\"' -f3 | cut -d ' ' -f2 | sort | uniq -c | sort -rn");
                                 break;
                             case '403':
-                                $this->passthru("awk '($9 ~ /403/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
+                                //$this->passthru("awk '($9 ~ /403/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
+                                // This one is much better than the one above.
+                                $this->passthru("awk '($9 ~ /403/)' nginx-access.log | awk -F\\\" '($2 ~ \"^GET *\"){print $2, $8}' | awk '{print $4, $2}' | sed 's/,//g' | sort | uniq -c | sort -rn");
                                 break;
                             case '404':
                                 $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
@@ -479,8 +481,26 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                                 $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
                                 break;
                             default:
-                                $this->log()->notice("You've reached the beyond.");
+                                $this->log()->notice("You've reached the great beyond.");
                         }
+                    }
+                }
+            }
+            else if ($options['type'] == 'nginx-error' && $options['shell'])
+            {
+                if (file_exists($dir . '/' . $options['type'] . '.log'))
+                {
+                    $nginx_error_log = $dir . '/' . $options['type'] . '.log';
+                    $filter = $options['filter'];
+                    if ($options['filter'] == 'access forbidden')
+                    {
+                        $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
+                        $this->passthru("cat $nginx_error_log | grep \"$filter\" | awk '{print $16, $11}' | sort -n | uniq -c | sort -nr | head -20");
+                    }
+                    if ($options['filter'] == 'SSL_shutdown')
+                    {
+                        $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
+                        $this->passthru("cat $nginx_error_log | grep \"$filter\" | sort -nr | head -10");
                     }
                 }
             }
