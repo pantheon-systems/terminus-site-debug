@@ -30,61 +30,61 @@ terminus logs:get site_name.dev --exclude --nginx-access --nginx-error
 
 ## Parsing Nginx Access Logs
 
-## Search **nginx-access** logs with 301 status code via PHP.
+### Search **nginx-access** logs with 301 status code via PHP.
 ```
 terminus logs:parse site_name.env --type=nginx-access --filter="301" --php
 ```
-## Show how many times the IP visited the site.
+### Show how many times the IP visited the site.
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=ip
 ```
-## Top response by HTTP status.
+### Top response by HTTP status.
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=response-code
 ```
-## Top 403 requests
+### Top 403 requests
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=403
 ```
-## Top 404 requests
+### Top 404 requests
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=404
 ```
-## Top 502 requests
+### Top 502 requests
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
 ```
 
 ## Parsing Nginx Error Logs
 
-## Search nginx-error.log for access forbidden error.
+### Search nginx-error.log for access forbidden error.
 ```
 terminus logs:parse site_name.env --type=nginx-error --filter="access forbidden" --shell
 ```
-## Search nginx-error.log for SSL_shutdown error.
+### Search nginx-error.log for SSL_shutdown error.
 ```
 terminus logs:parse site_name.env --type=nginx-error --filter="SSL_shutdown" --shell
 ```
 
 ## Parsing PHP Error Logs
 
-## Search **php-error** logs with 301 "Uncaught PHP Exception" error.
+### Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 ```
 terminus logs:parse site_name.env --type=php-error --filter="Uncaught PHP Exception" --php
 ```
-## Search to all the logs.
+### Search to all the logs.
 ```
 terminus logs:parse site_name.env --type=all --filter="error" --php
 ```
 
-## Parsing MySQL Slow Log
+### Parsing MySQL Slow Log
 ```
 terminus logs:parse site_name.env --type=mysql --shell
 ```
 
 ## Logs listing
 
-## To list all the log files.
+### To list all the log files.
 ```
 terminus logs:list site_name.env
 ```
