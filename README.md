@@ -54,6 +54,10 @@ terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=404
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
 ```
+### Count the request that hits the appserver per second.
+``
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=request-per-second
+```
 
 ## Parsing Nginx Error Logs
 
