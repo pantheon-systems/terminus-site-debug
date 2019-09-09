@@ -346,6 +346,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 case 'php-404':
                     $this->log()->notice('Top 404 requests accessing PHP file.');
                     break;
+                case 'request-per-second':
+                    $this->log()->notice("Requests per second. These are the requests was able to bypass Global CDN.");
+                    break;
                 default:
             }
         }
@@ -479,6 +482,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                                 break;
                             case 'most-requested-urls':
                                 $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
+                                break;
+                            case 'request-per-second':
+                                $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
                                 break;
                             default:
                                 $this->log()->notice("You've reached the great beyond.");
