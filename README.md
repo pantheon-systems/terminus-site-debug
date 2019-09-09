@@ -89,6 +89,9 @@ terminus logs:parse site_name.env --type=mysql --shell
 terminus logs:list site_name.env
 ```
 
+## Support
+This plugin is not working on Windows environment. You may want to Dockerized your Terminus to use this kind of plugin that uses *nix* commands to parse the logs.
+
 ## Installation
 For help installing, see [Manage Plugins](https://pantheon.io/docs/terminus/plugins/)
 ```
