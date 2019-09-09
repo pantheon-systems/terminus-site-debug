@@ -344,10 +344,10 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->log()->notice('Top most requested urls.');
                     break;
                 case 'php-404':
-                    $this->log()->notice('Top 404 requests accessing PHP file.');
+                    $this->log()->notice('Top PHP 404 requests.');
                     break;
                 case 'php-404-detailed':
-                    $this->log()->notice('Full details of top 404 requests accessing PHP file.');
+                    $this->log()->notice('Full details of top PHP 404 requests.');
                     break;
                 case 'request-per-second':
                     $this->log()->notice("Requests per second. These are the requests was able to bypass Global CDN.");
