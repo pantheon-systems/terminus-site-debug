@@ -50,6 +50,14 @@ terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=403
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=404
 ```
+### Top PHP 404 requests.
+```
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=php-404
+```
+### Top PHP 404 requests in full details.
+```
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=php-404-detailed
+```
 ### Top 502 requests
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
