@@ -212,7 +212,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
      */
-    public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '']) 
+    public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => '']) 
     {
         // Get the site name and environment.
         $this->DefineSiteEnv($site_env);
@@ -352,6 +352,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 case 'request-per-second':
                     $this->log()->notice("Requests per second. These are the requests was able to bypass Global CDN.");
                     break;
+                case 'request-method':
+                    $this->log()->notice('Top request methods.');
+                    break;
                 default:
             }
         }
@@ -457,6 +460,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     {
                         $nginx_access_log = $dir . '/' . $options['type'] . '.log';
                         $uri = $options['uri'];
+                        $method = $options['method'];
                         $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
                         switch ($options['grouped-by'])
                         {
@@ -491,6 +495,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                                 break;
                             case 'request-per-second':
                                 $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
+                                break;
+                            case 'request-method':
+                                $this->passthru("cat $nginx_access_log | grep \"$method\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
                                 break;
                             default:
                                 $this->log()->notice("You've reached the great beyond.");
