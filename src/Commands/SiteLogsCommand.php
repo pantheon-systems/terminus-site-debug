@@ -210,6 +210,12 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:parse
      * @aliases lp
      * 
+     * @param string $site_env The site name and site environemnt. Example: foo.dev for Dev environment, foo.test for Test environment, and foo.live for Live environment.
+     * @option php Parse the logs via PHP.
+     * @option shell Parse the logs using *nix commands.
+     * @option newrelic Shows NewRelic summary report.
+     * @option type Type of logs to parse (php-error, php-fpm-error, nginx-access, nginx-error, mysqld-slow-query). It should be the filename of the log without the .log extension. To parse all the logs just use "all".
+     * 
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
      */
     public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => '']) 
@@ -316,8 +322,24 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         // @Todo make a universal date parameter.
         $date_filter = $this->ConvertDate($options['type'], $options['since']);
+        print_r($options['type']);
+        print_r($this->logs_filename);
+        $test = [
+            'nginx-access',
+            'nginx-error',
+            'php-error',
+            'php-fpm-error',
+            'php-slow',
+            'pyinotify',
+            'watcher',
+            'newrelic',
+        ];
+        echo $test[TRUE];
+        echo $test[1]; 
+        //in_array(true, $test) 
+           
 
-        if ($options['shell'])
+        if (!empty($options['type']) && $options['shell'])
         {
             $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
             switch ($options['grouped-by'])
@@ -365,7 +387,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         foreach ($dirs as $dir) 
         {
             // Get the log file.
-            if ($options['type'] == 'all' && $options['php']) 
+            if ($options['type'] === 'all' && $options['php']) 
             {
                 if ($res = opendir($dir)) 
                 {
@@ -406,7 +428,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     closedir($res);
                 }
             }
-            else if ($options['type'] == 'mysql' && $options['shell'])
+            else if ($options['type'] === 'mysql' && $options['shell'])
             {
                 // Parse MySQL slow log.
                 if ('which pt-query-digest')
@@ -420,7 +442,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->log()->error("You don't have Percona tool installed. If you're on MacOS you can install percona-toolkit using Brew.");
                 }
             }
-            else if ($options['type'] == 'php-slow' && $options['shell'])
+            else if ($options['type'] === 'php-slow' && $options['shell'])
             {
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
@@ -451,7 +473,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     }
                 }
             }
-            else if ($options['type'] == 'nginx-access' && $options['shell'])
+            else if ($options['type'] === 'nginx-access' && $options['shell'])
             {
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
@@ -505,7 +527,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     }
                 }
             }
-            else if ($options['type'] == 'nginx-error' && $options['shell'])
+            else if ($options['type'] === 'nginx-error' && $options['shell'])
             {
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
@@ -523,7 +545,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     }
                 }
             }
-            else if ($options['type'] != 'all' && $options['php'])
+            else if ($options['type'] !== 'all' && $options['php'])
             {
                 $log = $dir . '/' . $options['type'] . ".log";
 
