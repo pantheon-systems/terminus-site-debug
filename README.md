@@ -115,3 +115,6 @@ mkdir -p ~/.terminus/plugins
 cd ~/.terminus/plugins
 git clone https://github.com/geraldvillorente/terminus-site-debug.git
 ```
+
+## Credits 
+* To https://github.com/jfussion for the idea and initial codebase.
