@@ -1,6 +1,10 @@
 .env
 .config
-term-config
 .DS_Store
 .vscode/
 src/.DS_Store
+vendor
+bats
+bin
+libexec
+share
