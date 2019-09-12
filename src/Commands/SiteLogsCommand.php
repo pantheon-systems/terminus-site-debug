@@ -322,24 +322,8 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         // @Todo make a universal date parameter.
         $date_filter = $this->ConvertDate($options['type'], $options['since']);
-        print_r($options['type']);
-        print_r($this->logs_filename);
-        $test = [
-            'nginx-access',
-            'nginx-error',
-            'php-error',
-            'php-fpm-error',
-            'php-slow',
-            'pyinotify',
-            'watcher',
-            'newrelic',
-        ];
-        echo $test[TRUE];
-        echo $test[1]; 
-        //in_array(true, $test) 
-           
 
-        if (!empty($options['type']) && $options['shell'])
+        if (ctype_alpha($options['type']) && $options['shell'])
         {
             $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
             switch ($options['grouped-by'])
@@ -377,8 +361,32 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 case 'request-method':
                     $this->log()->notice('Top request methods.');
                     break;
+                case 'time':
+                    $this->log()->notice('Count of queries based on their time of execution. The first column is the total number of queries and the second column is the timestamp.');
                 default:
+                    // Do nothing.
             }
+
+            if ($options['type'] === 'mysql' && $options['grouped-by'] === 'all')
+            {
+                $this->log()->notice('Percona Toolkit Terms Meaning.');
+                $this->output()->writeln("
+                    Column        Meaning
+                    ============  ==========================================================
+                    Rank          The query's rank within the entire set of queries analyzed
+                    Query ID      The query's fingerprint
+                    Response time The total response time, and percentage of overall total
+                    Calls         The number of times this query was executed
+                    R/Call        The mean response time per execution
+                    V/M           The Variance-to-mean ratio of response time
+                    Item          The distilled query
+                ");
+            }
+        }
+        else 
+        {
+            $this->log()->error('Type value is missing.');
+            exit();
         }
 
         // Scanner storage.
@@ -430,11 +438,22 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
             else if ($options['type'] === 'mysql' && $options['shell'])
             {
+                $mysql_slow_log = $dir . '/' . "mysqld-slow-query.log";
+
                 // Parse MySQL slow log.
                 if ('which pt-query-digest')
                 {
-                    $mysql_slow_log = $dir . '/' . "mysqld-slow-query.log";
-                    $this->passthru("pt-query-digest $mysql_slow_log");
+                    switch ($options['grouped-by']) 
+                    {
+                        case false:
+                            $this->passthru("pt-query-digest $mysql_slow_log");
+                            break;
+                        case 'time':
+                            $this->passthru("grep -A1 Query_time $mysql_slow_log | grep SET | awk -F '=' '{ print $2 }' | sort | uniq -c | sort -nr");
+                            break;
+                        default:   
+                            $this->log()->notice("You've reached the great beyond.");
+                    }
                     exit();
                 }
                 else
@@ -529,6 +548,11 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
             else if ($options['type'] === 'nginx-error' && $options['shell'])
             {
+                if (!$options['filter']) {
+                    $this->log()->notice("You need to specify the filter."); 
+                    exit();
+                }
+                
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
                     $nginx_error_log = $dir . '/' . $options['type'] . '.log';
