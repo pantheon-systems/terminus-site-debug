@@ -62,6 +62,11 @@ terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=php-4
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502
 ```
+### Top IPs accessing 502. 
+To get 502 URIs run this command first: `terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502`
+```
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=ip-accessing-502 --uri={SITE_URI}
+```
 ### Count the request that hits the appserver per second.
 ```
 terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=request-per-second
