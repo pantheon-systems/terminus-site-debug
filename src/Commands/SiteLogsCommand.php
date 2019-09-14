@@ -323,7 +323,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // @Todo make a universal date parameter.
         $date_filter = $this->ConvertDate($options['type'], $options['since']);
 
-        if (ctype_alpha($options['type']) && $options['shell'])
+        if (preg_match("/^[a-z\-]+$/", $options['type']) && $options['shell'])
         {
             $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
             switch ($options['grouped-by'])
@@ -438,27 +438,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
             else if ($options['type'] === 'mysql' && $options['shell'])
             {
-                $mysql_slow_log = $dir . '/' . "mysqld-slow-query.log";
-
-                // Parse MySQL slow log.
-                if ('which pt-query-digest')
+                if (file_exists($dir . '/' . 'mysqld-slow-query.log'))
                 {
-                    switch ($options['grouped-by']) 
-                    {
-                        case false:
-                            $this->passthru("pt-query-digest $mysql_slow_log");
-                            break;
-                        case 'time':
-                            $this->passthru("grep -A1 Query_time $mysql_slow_log | grep SET | awk -F '=' '{ print $2 }' | sort | uniq -c | sort -nr");
-                            break;
-                        default:   
-                            $this->log()->notice("You've reached the great beyond.");
-                    }
-                    exit();
-                }
-                else
-                {
-                    $this->log()->error("You don't have Percona tool installed. If you're on MacOS you can install percona-toolkit using Brew.");
+                    $this->ParseMysqlSlowLog($dir, $options);
                 }
             }
             else if ($options['type'] === 'php-slow' && $options['shell'])
@@ -466,84 +448,14 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
                     // Parse php-slow log using *nix commands.
-                    if (('which cat') && ('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
-                    {
-                        $php_slow_log = $dir . '/' . $options['type'] . '.log';
-                        $this->output()->writeln("From <info>" . $php_slow_log . "</> file.");
-                        
-                        switch ($options['grouped-by'])
-                        {
-                            case 'latest':
-                                $this->passthru("tail $php_slow_log");
-                                break;
-                            case 'function':
-                                $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
-                                break;
-                            case 'minute':
-                                $this->passthru("cat $php_slow_log | grep 'pool www' | cut -d' ' -f2 | sort | cut -d: -f1,2 | uniq -c");
-                                break;
-                            default:
-                                $this->log()->notice("You've reached the great beyond.");
-                        }
-                    }
-                    else 
-                    {
-                        $this->log()->error("Required utilities are not installed.");
-                    }
+                    $this->ParsePhpSlowLog($dir, $options);
                 }
             }
             else if ($options['type'] === 'nginx-access' && $options['shell'])
             {
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
-                    // Parse php-slow log using *nix commands.
-                    if (('which cat') && ('which awk') && ('which uniq') && ('which sort'))
-                    {
-                        $nginx_access_log = $dir . '/' . $options['type'] . '.log';
-                        $uri = $options['uri'];
-                        $method = $options['method'];
-                        $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
-                        switch ($options['grouped-by'])
-                        {
-                            case 'ip':
-                                $this->passthru('cat ' . $nginx_access_log . '| awk -F\\" \'{print $8}\' | awk \'{print $1}\' | sort -n | uniq -c | sort -nr | head -20');
-                                break;
-                            case 'response-code':
-                                $this->passthru("cat $nginx_access_log | cut -d '\"' -f3 | cut -d ' ' -f2 | sort | uniq -c | sort -rn");
-                                break;
-                            case '403':
-                                //$this->passthru("awk '($9 ~ /403/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
-                                // This one is much better than the one above.
-                                $this->passthru("awk '($9 ~ /403/)' nginx-access.log | awk -F\\\" '($2 ~ \"^GET *\"){print $2, $8}' | awk '{print $4, $2}' | sed 's/,//g' | sort | uniq -c | sort -rn");
-                                break;
-                            case '404':
-                                $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
-                                break;
-                            case '502':
-                                $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -r");
-                                break;
-                            case 'ip-accessing-502':
-                                $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk -F\\\" '($2 ~ \"/$uri\"){print $1}' | awk '{print $1}' | sort | uniq -c | sort -r");
-                                break;
-                            case 'php-404':
-                                $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk -F\\\" '($2 ~ \"^GET .*\\.php\")' | awk '{print $7}' | sort | uniq -c | sort -r | head -n 20");
-                                break;
-                            case 'php-404-detailed':
-                                $this->passthru("cat $nginx_access_log  | grep '[GET|POST] .*\.php' | awk '($9 ~ /404/)'");
-                                break;
-                            case 'most-requested-urls':
-                                $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
-                                break;
-                            case 'request-per-second':
-                                $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
-                                break;
-                            case 'request-method':
-                                $this->passthru("cat $nginx_access_log | grep \"$method\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
-                                break;
-                            default:
-                                $this->log()->notice("You've reached the great beyond.");
-                        }
-                    }
+                    $this->ParseNginxAccessLog($dir, $options);
                 }
             }
             else if ($options['type'] === 'nginx-error' && $options['shell'])
@@ -688,5 +600,120 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $env = $this->environment->id;
     
         $this->passthru("terminus newrelic:healthcheck $site.$env");
+    }
+
+    /**
+     * Parse PHP slow log.
+     */
+    private function ParsePhpSlowLog($dir, $options)
+    {
+        if (('which cat') && ('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
+        {
+            $php_slow_log = $dir . '/' . $options['type'] . '.log';
+            $this->output()->writeln("From <info>" . $php_slow_log . "</> file.");
+            
+            switch ($options['grouped-by'])
+            {
+                case 'latest':
+                    $this->passthru("tail $php_slow_log");
+                    break;
+                case 'function':
+                    $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
+                    break;
+                case 'minute':
+                    $this->passthru("cat $php_slow_log | grep 'pool www' | cut -d' ' -f2 | sort | cut -d: -f1,2 | uniq -c");
+                    break;
+                default:
+                    $this->log()->notice("You've reached the great beyond.");
+            }
+        }
+        else 
+        {
+            $this->log()->error("Required utilities are not installed.");
+        }
+    }
+
+    /**
+     * Parse MySQL slow log.
+     */
+    private function ParseMysqlSlowLog($dir, $options)
+    {
+        $mysql_slow_log = $dir . '/' . "mysqld-slow-query.log";
+
+        // Parse MySQL slow log.
+        if ('which pt-query-digest')
+        {
+            switch ($options['grouped-by']) 
+            {
+                case false:
+                    $this->passthru("pt-query-digest $mysql_slow_log");
+                    break;
+                case 'time':
+                    $this->passthru("grep -A1 Query_time $mysql_slow_log | grep SET | awk -F '=' '{ print $2 }' | sort | uniq -c | sort -nr");
+                    break;
+                default:   
+                    $this->log()->notice("You've reached the great beyond.");
+            }
+            exit();
+        }
+        else
+        {
+            $this->log()->error("You don't have Percona tool installed. If you're on MacOS you can install percona-toolkit using Brew.");
+        }
+    }
+
+    /**
+     * Parse Nginx access log.
+     */
+    private function ParseNginxAccessLog($dir, $options)
+    {
+        // Parse php-slow log using *nix commands.
+        if (('which cat') && ('which awk') && ('which uniq') && ('which sort'))
+        {
+            $nginx_access_log = $dir . '/' . $options['type'] . '.log';
+            $uri = $options['uri'];
+            $method = $options['method'];
+            $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
+            switch ($options['grouped-by'])
+            {
+                case 'ip':
+                    $this->passthru('cat ' . $nginx_access_log . '| awk -F\\" \'{print $8}\' | awk \'{print $1}\' | sort -n | uniq -c | sort -nr | head -20');
+                    break;
+                case 'response-code':
+                    $this->passthru("cat $nginx_access_log | cut -d '\"' -f3 | cut -d ' ' -f2 | sort | uniq -c | sort -rn");
+                    break;
+                case '403':
+                    //$this->passthru("awk '($9 ~ /403/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
+                    // This one is much better than the one above.
+                    $this->passthru("awk '($9 ~ /403/)' nginx-access.log | awk -F\\\" '($2 ~ \"^GET *\"){print $2, $8}' | awk '{print $4, $2}' | sed 's/,//g' | sort | uniq -c | sort -rn");
+                    break;
+                case '404':
+                    $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -rn");
+                    break;
+                case '502':
+                    $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -r");
+                    break;
+                case 'ip-accessing-502':
+                    $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk -F\\\" '($2 ~ \"/$uri\"){print $1}' | awk '{print $1}' | sort | uniq -c | sort -r");
+                    break;
+                case 'php-404':
+                    $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk -F\\\" '($2 ~ \"^GET .*\\.php\")' | awk '{print $7}' | sort | uniq -c | sort -r | head -n 20");
+                    break;
+                case 'php-404-detailed':
+                    $this->passthru("cat $nginx_access_log  | grep '[GET|POST] .*\.php' | awk '($9 ~ /404/)'");
+                    break;
+                case 'most-requested-urls':
+                    $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
+                    break;
+                case 'request-per-second':
+                    $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
+                    break;
+                case 'request-method':
+                    $this->passthru("cat $nginx_access_log | grep \"$method\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
+                    break;
+                default:
+                    $this->log()->notice("You've reached the great beyond.");
+            }
+        }
     }
 }
