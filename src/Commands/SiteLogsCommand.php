@@ -619,7 +619,8 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             switch ($options['grouped-by'])
             {
                 case 'latest':
-                    $this->passthru("tail $php_slow_log");
+                    $this->passthru("tail +$(($(grep -nE ^$ $php_slow_log | tail -n1 | sed  -e 's/://g')+1)) $php_slow_log");
+
                     break;
                 case 'function':
                     $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
