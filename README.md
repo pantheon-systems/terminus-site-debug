@@ -98,6 +98,21 @@ terminus logs:parse site_name.env --type=php-error --filter="Uncaught PHP Except
 terminus logs:parse site_name.env --type=all --filter="error" --php
 ```
 
+## Parsing PHP Slow Logs
+
+### Search for the latest entries.
+```
+terminus logs:parse site_name.env --type=php-slow --shell --grouped-by=latest 
+```
+### Top functions by number of times they called.
+```
+terminus logs:parse site_name.env --type=php-slow --shell --grouped-by=function
+```
+### Slow requests grouped by minute
+```
+terminus logs:parse site_name.env --type=php-slow --shell --grouped-by=minute
+```
+
 ## Parsing MySQL Slow Log
 
 ### Display everything.
