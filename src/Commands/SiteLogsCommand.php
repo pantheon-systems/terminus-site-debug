@@ -323,64 +323,68 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // @Todo make a universal date parameter.
         $date_filter = $this->ConvertDate($options['type'], $options['since']);
 
-        if (preg_match("/^[a-z\-]+$/", $options['type']) && $options['shell'])
+        // Make sure the type option is not empty.
+        if (preg_match("/^[a-z\-]+$/", $options['type']))
         {
-            $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
-            switch ($options['grouped-by'])
+            if ($options['type'] !== 'all' && $options['shell'])
             {
-                case 'ip':
-                    $this->log()->notice('Top visitors by IP.');
-                    break;
-                case 'response-code':
-                    $this->log()->notice('Top access by response code.');
-                    break;
-                case '403':
-                    $this->log()->notice('Top 403 requests.');
-                    break;
-                case '404':
-                    $this->log()->notice('Top 404 requests.');
-                    break;
-                case '502':
-                    $this->log()->notice('Top 502 requests.');
-                    break;
-                case 'ip-accessing-502':
-                    $this->log()->notice('Top 502 requests by IP.');
-                    break;
-                case 'most-requested-urls':
-                    $this->log()->notice('Top most requested urls.');
-                    break;
-                case 'php-404':
-                    $this->log()->notice('Top PHP 404 requests.');
-                    break;
-                case 'php-404-detailed':
-                    $this->log()->notice('Full details of top PHP 404 requests.');
-                    break;
-                case 'request-per-second':
-                    $this->log()->notice("Requests per second. These are the requests was able to bypass Global CDN.");
-                    break;
-                case 'request-method':
-                    $this->log()->notice('Top request methods.');
-                    break;
-                case 'time':
-                    $this->log()->notice('Count of queries based on their time of execution. The first column is the total number of queries and the second column is the timestamp.');
-                default:
-                    // Do nothing.
-            }
+                $this->log()->warning('This operation requires *nix commands like grep, cut, sort, uniq, and tail.');
+                switch ($options['grouped-by'])
+                {
+                    case 'ip':
+                        $this->log()->notice('Top visitors by IP.');
+                        break;
+                    case 'response-code':
+                        $this->log()->notice('Top access by response code.');
+                        break;
+                    case '403':
+                        $this->log()->notice('Top 403 requests.');
+                        break;
+                    case '404':
+                        $this->log()->notice('Top 404 requests.');
+                        break;
+                    case '502':
+                        $this->log()->notice('Top 502 requests.');
+                        break;
+                    case 'ip-accessing-502':
+                        $this->log()->notice('Top 502 requests by IP.');
+                        break;
+                    case 'most-requested-urls':
+                        $this->log()->notice('Top most requested urls.');
+                        break;
+                    case 'php-404':
+                        $this->log()->notice('Top PHP 404 requests.');
+                        break;
+                    case 'php-404-detailed':
+                        $this->log()->notice('Full details of top PHP 404 requests.');
+                        break;
+                    case 'request-per-second':
+                        $this->log()->notice("Requests per second. These are the requests was able to bypass Global CDN.");
+                        break;
+                    case 'request-method':
+                        $this->log()->notice('Top request methods.');
+                        break;
+                    case 'time':
+                        $this->log()->notice('Count of queries based on their time of execution. The first column is the total number of queries and the second column is the timestamp.');
+                    default:
+                        // Do nothing.
+                }
 
-            if ($options['type'] === 'mysql' && $options['grouped-by'] === 'all')
-            {
-                $this->log()->notice('Percona Toolkit Terms Meaning.');
-                $this->output()->writeln("
-                    Column        Meaning
-                    ============  ==========================================================
-                    Rank          The query's rank within the entire set of queries analyzed
-                    Query ID      The query's fingerprint
-                    Response time The total response time, and percentage of overall total
-                    Calls         The number of times this query was executed
-                    R/Call        The mean response time per execution
-                    V/M           The Variance-to-mean ratio of response time
-                    Item          The distilled query
-                ");
+                if ($options['type'] === 'mysql' && $options['grouped-by'] === 'all')
+                {
+                    $this->log()->notice('Percona Toolkit Terms Meaning.');
+                    $this->output()->writeln("
+                        Column        Meaning
+                        ============  ==========================================================
+                        Rank          The query's rank within the entire set of queries analyzed
+                        Query ID      The query's fingerprint
+                        Response time The total response time, and percentage of overall total
+                        Calls         The number of times this query was executed
+                        R/Call        The mean response time per execution
+                        V/M           The Variance-to-mean ratio of response time
+                        Item          The distilled query
+                    ");
+                }
             }
         }
         else 
