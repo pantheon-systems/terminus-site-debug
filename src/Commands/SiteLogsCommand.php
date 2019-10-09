@@ -9,17 +9,24 @@
 
 namespace Pantheon\TerminusSiteLogs\Commands;
 
+use Consolidation\OutputFormatters\StructuredData\RowsOfFields;
 use Consolidation\OutputFormatters\StructuredData\PropertyList;
 use Pantheon\Terminus\Commands\TerminusCommand;
+use Pantheon\Terminus\Commands\StructuredListTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
 use Pantheon\Terminus\Commands\Remote\DrushCommand;
 
+/**
+ * Class SiteLogsCommand
+ * @package Pantheon\TerminusSiteLogs\Commands
+ */
 class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
+    use StructuredListTrait;
 
     private $site;
     private $environment;
@@ -210,11 +217,12 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:parse
      * @aliases lp
      * 
-     * @param string $site_env The site name and site environemnt. Example: foo.dev for Dev environment, foo.test for Test environment, and foo.live for Live environment.
+     * @param string $site_env The site name and site environment. Example: foo.dev for Dev environment, foo.test for Test environment, and foo.live for Live environment.
      * @option php Parse the logs via PHP.
      * @option shell Parse the logs using *nix commands.
      * @option newrelic Shows NewRelic summary report.
      * @option type Type of logs to parse (php-error, php-fpm-error, nginx-access, nginx-error, mysqld-slow-query). It should be the filename of the log without the .log extension. To parse all the logs just use "all".
+     * @option uri The uri from nginx-access.log.
      * 
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
      */
@@ -316,6 +324,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $this->DefineSiteEnv($site_env);
         $site = $this->site->get('name');
         $env = $this->environment->id;
+
+        //$this->checkSiteHeaders($site_env);
+        //exit();
 
         // Get the logs per environment.
         $dirs = array_filter(glob($this->logPath . '/' . $site . '/' . $env . '/*'), 'is_dir');
@@ -614,13 +625,44 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         if (('which cat') && ('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
         {
             $php_slow_log = $dir . '/' . $options['type'] . '.log';
+            $php_fpm_error_log = $dir . '/php-fpm-error.log';
+
             $this->output()->writeln("From <info>" . $php_slow_log . "</> file.");
             
             switch ($options['grouped-by'])
             {
                 case 'latest':
                     $this->passthru("tail +$(($(grep -nE ^$ $php_slow_log | tail -n1 | sed  -e 's/://g')+1)) $php_slow_log");
+                    $pid = exec("tail +$(($(grep -nE ^$ $php_slow_log | tail -n1 | sed  -e 's/://g')+1)) $php_slow_log | head -n 1 | awk '{print $6}'");
+                    $this->output()->writeln("<info>--</> Looking for additional information of <info>pid $pid</> in <info>$php_fpm_error_log</> log.");
+                    sleep(6);
+                    exec("grep -n \"WARNING: \[pool www\] child $pid\" $php_fpm_error_log > /tmp/temp_php_fpm_error_log_file");
+                    
+                    $fn = fopen("/tmp/temp_php_fpm_error_log_file", "r");
+  
+                    while(!feof($fn))  {
+                        $result = fgets($fn);
+                        preg_match('#^(\d+):(.*)$#', $result, $pid_matches);
 
+                        $line_number = ($pid_matches[1]??'');
+                        $log_message = ($pid_matches[2]??'');
+                        preg_match('#request: \"(GET|POST|HEAD) (.*?)\"#', $log_message, $log_message_matches);
+                        preg_match_all('#\(([^\)]+)\)#', $log_message, $time);
+                        if (!empty($line_number) && !empty($log_message)) 
+                        {
+                            $this->output()->writeln("<info>Line number:</> {$line_number}");
+                            $this->output()->writeln("<info>Request method:</>  {$log_message_matches[1]}");
+                            $this->output()->writeln("<info>Request URI:</> {$log_message_matches[2]}");
+                            if (isset($time[1]) && isset($time[1][1]))
+                            {
+                                $this->output()->writeln("<info>Time spent:</> {$time[1][1]}");
+                            }  
+                        }
+                    }
+                    fclose($fn);
+                    
+                    $this->passthru("rm -rf /tmp/temp_php_fpm_error_log_file");
+                    $this->output()->writeln("");
                     break;
                 case 'function':
                     $this->passthru("cat $php_slow_log | grep -A 1 script_filename | grep -v script_filename | grep -v -e '--' | cut -c 22- | sort | uniq -c | sort -nr");
@@ -631,7 +673,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 default:
                     $this->log()->notice("You've reached the great beyond.");
             }
-        }
+        } 
         else 
         {
             $this->log()->error("Required utilities are not installed.");
@@ -720,5 +762,28 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->log()->notice("You've reached the great beyond.");
             }
         }
+    }
+
+    /**
+     * Get the response header.
+     * 
+     * @return RowsOfFields
+     *
+     * @param string $site_env Site & environment in the format `site-name.env`
+     */
+    private function checkSiteHeaders($site_env)
+    {
+        list(, $env) = $this->getSiteEnv($site_env);
+        $domains = $env->getDomains()->filter(
+            function ($domain) {
+                return $domain->get('type') === 'custom';
+            }
+        )->all();
+        foreach ($domains as $domain) {
+            //print_r($domain->getDNSRecords()->serialize());
+            get_class_methods($domain->getUrl());
+            //$settings = array_merge($settings, $domain->getDNSRecords()->serialize());
+        }
+        //return new RowsOfFields($settings);
     }
 }

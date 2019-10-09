@@ -6,10 +6,8 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'Seld\\CliPrompt\\' => array($vendorDir . '/seld/cli-prompt/src'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
-    'Pantheon\\TerminusGetLogs\\' => array($baseDir . '/src'),
+    'Pantheon\\TerminusSiteLogs\\' => array($baseDir . '/src'),
     'League\\CLImate\\' => array($vendorDir . '/league/climate/src'),
-    'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),
 );
