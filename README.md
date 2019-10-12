@@ -73,7 +73,7 @@ terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=reque
 ```
 ### Top request methods.
 ```
-terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=request-method --method=[200|403|404|502]
+terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=request-method --code=[200|403|404|502]
 ```
 
 ## Parsing Nginx Error Logs

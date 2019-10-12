@@ -19,6 +19,8 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
 use Pantheon\Terminus\Commands\Remote\DrushCommand;
 
+use Pantheon\TerminusSiteLogs\Utility\Commons;
+
 /**
  * Class SiteLogsCommand
  * @package Pantheon\TerminusSiteLogs\Commands
@@ -224,7 +226,37 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @option type Type of logs to parse (php-error, php-fpm-error, nginx-access, nginx-error, mysqld-slow-query). It should be the filename of the log without the .log extension. To parse all the logs just use "all".
      * @option uri The uri from nginx-access.log.
      * 
-     * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error} --filter="{KEYWORD}"
+     * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error|php-slow} --shell --grouped-by="{KEYWORD}"
+     * 
+     * To get the top visitors by IP:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=ip
+     * 
+     * To get top responses by HTTP status:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=response-code 
+     * 
+     * To get top 403 requests:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=403
+     * 
+     * To get top 404 requests: 
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=404
+     * 
+     * To get PHP top 404 requests:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=php-404
+     * 
+     * Top PHP 404 requests in full details:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=php-404-detailed
+     * 
+     * To get 502 requests:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=502
+     * 
+     * Top IPs accessing 502 (requires "terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502" to get the SITE_URI):
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=ip-accessing-502 --uri={SITE_URI}
+     * 
+     * To count the request that hits the appserver per second:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=request-per-second
+     * 
+     * Top request by HTTP code:
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=request-method --code=[200|403|404|502]
      */
     public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => '']) 
     {
@@ -373,7 +405,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                         $this->log()->notice("Requests per second. These are the requests was able to bypass Global CDN.");
                         break;
                     case 'request-method':
-                        $this->log()->notice('Top request methods.');
+                        $this->log()->notice('Top requests by HTTP code.');
                         break;
                     case 'time':
                         $this->log()->notice('Count of queries based on their time of execution. The first column is the total number of queries and the second column is the timestamp.');
@@ -719,7 +751,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         {
             $nginx_access_log = $dir . '/' . $options['type'] . '.log';
             $uri = $options['uri'];
-            $method = $options['method'];
+            $response_status = $options['code'];
             $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
             switch ($options['grouped-by'])
             {
@@ -750,13 +782,13 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->passthru("cat $nginx_access_log  | grep '[GET|POST] .*\.php' | awk '($9 ~ /404/)'");
                     break;
                 case 'most-requested-urls':
-                    $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -r | head -10");
+                    $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -rn | head -20");
                     break;
                 case 'request-per-second':
                     $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
                     break;
                 case 'request-method':
-                    $this->passthru("cat $nginx_access_log | grep \"$method\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
+                    $this->passthru("cat $nginx_access_log | grep \"$response_status\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
                     break;
                 default:
                     $this->log()->notice("You've reached the great beyond.");
