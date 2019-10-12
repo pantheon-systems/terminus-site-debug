@@ -751,7 +751,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         {
             $nginx_access_log = $dir . '/' . $options['type'] . '.log';
             $uri = $options['uri'];
-            $response_status = $options['code'];
+            $response_status = ($options['code']) ? $options['code'] : '';
             $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
             switch ($options['grouped-by'])
             {
@@ -773,16 +773,19 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk '{print $7}' | sort | uniq -c | sort -r");
                     break;
                 case 'ip-accessing-502':
-                    $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk -F\\\" '($2 ~ \"/$uri\"){print $1}' | awk '{print $1}' | sort | uniq -c | sort -r");
+                    $this->passthru("awk '($9 ~ /502/)' $nginx_access_log | awk -F\\\" '($2 ~ \"/$uri\"){print $1}' | awk '{print $1}' | sort | uniq -c | sort -rn");
                     break;
                 case 'php-404':
-                    $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk -F\\\" '($2 ~ \"^GET .*\\.php\")' | awk '{print $7}' | sort | uniq -c | sort -r | head -n 20");
+                    $this->passthru("awk '($9 ~ /404/)' $nginx_access_log | awk -F\\\" '($2 ~ \"^GET .*\\.php\")' | awk '{print $7}' | sort | uniq -c | sort -rn | head -n 20");
                     break;
                 case 'php-404-detailed':
                     $this->passthru("cat $nginx_access_log  | grep '[GET|POST] .*\.php' | awk '($9 ~ /404/)'");
                     break;
                 case 'most-requested-urls':
                     $this->passthru("awk -F\\\" '{print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -rn | head -20");
+                    break;
+                case 'most-requested-containing-xyz':
+                    $this->passthru("awk -F\\\" '($2 ~ \"xml\"){print $2}' $nginx_access_log | awk '{print $2}' | sort | uniq -c | sort -rn | head -20");
                     break;
                 case 'request-per-second':
                     $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
