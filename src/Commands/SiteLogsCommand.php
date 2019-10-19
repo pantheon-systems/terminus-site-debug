@@ -62,7 +62,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @aliases lg
      */
     public function GetLogs($site_env, $dest = null,
-        $options = ['exclude' => true, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true,]) {
+        $options = ['exclude' => true, 'all' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true,]) {
         
         // Create the logs directory if not present.
         if (!is_dir($this->logPath))
@@ -110,8 +110,16 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 mkdir($dir, 0777, true);
             }
 
-            $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/*.log $dir"]);
-            $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/*.log $dir >/dev/null 2>&1");
+            if ($options['all'])
+            {
+                $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/* $dir"]);
+                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/* $dir >/dev/null 2>&1");
+            }
+            else
+            {
+                $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/*.log $dir"]);
+                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/*.log $dir >/dev/null 2>&1");
+            }
         }
 
         // DBserver - Loop through the record and download the logs.
