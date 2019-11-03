@@ -837,4 +837,34 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
         //return new RowsOfFields($settings);
     }
+
+    /**
+     * List all the sites in the logs.
+     * 
+     * @command logs:list:sites
+     * @aliases ll:sites lls
+     *
+     */
+    public function ListSites()
+    {
+        $sites = array_diff(scandir($this->logPath), $this->Exclude());
+        
+        foreach ($sites as $site)
+        {
+            $this->output()->writeln("- {$site}");
+            $envs = array_diff(scandir($this->logPath . '/' . $site), $this->Exclude());
+            foreach ($envs as $env)
+            {
+                $this->output()->writeln("<info>  * </> {$env}");
+            }
+        }
+    }
+
+    /**
+     * Exclude files and dirs.
+     */
+    private function Exclude()
+    {
+        return ['.DS_Store', '.', '..'];
+    }
 }

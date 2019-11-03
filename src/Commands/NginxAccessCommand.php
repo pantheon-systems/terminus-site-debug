@@ -27,7 +27,8 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
 
     private $site;
     private $environment;
-
+    private $logPath;
+    
     /**
      * Object constructor
      */
