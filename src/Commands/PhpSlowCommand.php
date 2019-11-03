@@ -53,13 +53,13 @@ class PhpSlowCommand extends TerminusCommand implements SiteAwareInterface
      * @usage <site>.<env> --shell --grouped-by="{KEYWORD}"
      * 
      * Search for the latest entries.
-     *   terminus logs:parse:php-slow <site>.<env> --shell --grouped-by=latest 
+     *   terminus logs:parse:php-slow <site>.<env> --grouped-by=latest 
      * 
      * Top functions by number of times they called:
-     *   terminus logs:parse:php-slow <site>.<env> --shell --grouped-by=function
+     *   terminus logs:parse:php-slow <site>.<env> --grouped-by=function
      * 
      * Slow requests grouped by minute:
-     *   terminus logs:parse:php-slow <site>.<env> --shell --grouped-by=minute
+     *   terminus logs:parse:php-slow <site>.<env> --grouped-by=minute
      */ 
     public function ParsePhpSlowCommand($site_env, $options = ['php' => false, 'shell' => true, 'newrelic' => false, 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => ''])
     {

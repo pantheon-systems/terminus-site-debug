@@ -28,7 +28,7 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
     private $site;
     private $environment;
     private $logPath;
-    
+
     /**
      * Object constructor
      */
@@ -52,37 +52,37 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
      * @option type Type of logs to parse (php-error, php-fpm-error, nginx-access, nginx-error, mysqld-slow-query). It should be the filename of the log without the .log extension. To parse all the logs just use "all".
      * @option uri The uri from nginx-access.log.
      * 
-     * @usage <site>.<env> --shell --grouped-by="{KEYWORD}"
+     * @usage <site>.<env> --grouped-by="{KEYWORD}"
      * 
      * To get the top visitors by IP:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=ip
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=ip
      * 
      * To get top responses by HTTP status:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=response-code 
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=response-code 
      * 
      * To get top 403 requests:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=403
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=403
      * 
      * To get top 404 requests: 
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=404
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=404
      * 
      * To get PHP top 404 requests:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=php-404
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=php-404
      * 
      * Top PHP 404 requests in full details:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=php-404-detailed
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=php-404-detailed
      * 
      * To get 502 requests:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=502
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=502
      * 
      * Top IPs accessing 502 (requires "terminus logs:parse site_name.env --shell --grouped-by=502" to get the SITE_URI):
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=ip-accessing-502 --uri={SITE_URI}
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=ip-accessing-502 --uri={SITE_URI}
      * 
      * To count the request that hits the appserver per second:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=request-per-second
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=request-per-second
      * 
      * Top request by HTTP code:
-     *   terminus logs:parse:nginx-access <site>.<env> --shell --grouped-by=request-method --code=[200|403|404|502]
+     *   terminus logs:parse:nginx-access <site>.<env> --grouped-by=request-method --code=[200|403|404|502]
      */ 
     public function ParseNginxCommand($site_env, $options = ['php' => false, 'shell' => true, 'newrelic' => false, 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => ''])
     {
@@ -252,14 +252,15 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
         // Parse php-slow log using *nix commands.
         if (('which cat') && ('which awk') && ('which uniq') && ('which sort') && ('which sed'))
         {
-            $nginx_access_log = $dir . '/' . $options['type'] . '.log';
+            $nginx_access_log = $dir . '/nginx-access.log';
             $uri = $options['uri'];
-            $response_status = ($options['code']) ? $options['code'] : '';
             $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
+            
             switch ($options['grouped-by'])
             {
                 case 'ip':
                     $this->passthru('cat ' . $nginx_access_log . '| awk -F\\" \'{print $8}\' | awk \'{print $1}\' | sort -n | uniq -c | sort -nr | head -20');
+                    $this->output()->writeln("");
                     break;
                 case 'response-code':
                     $this->passthru("cat $nginx_access_log | cut -d '\"' -f3 | cut -d ' ' -f2 | sort | uniq -c | sort -rn");
@@ -294,6 +295,7 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
                     $this->passthru("cat $nginx_access_log | awk '{print $4}' | sed 's/\[//g' | uniq -c | sort -rn | head -10");
                     break;
                 case 'request-method':
+                    $response_status = ($options['code']) ? $options['code'] : '200';
                     $this->passthru("cat $nginx_access_log | grep \"$response_status\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
                     break;
                 default:
