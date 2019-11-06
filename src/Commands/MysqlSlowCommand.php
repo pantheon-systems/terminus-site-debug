@@ -48,17 +48,27 @@ class MysqlSlowCommand extends TerminusCommand implements SiteAwareInterface
      * @option php Parse the logs via PHP. 
      * @option shell Parse the logs using *nix built-in tools.
      * @option newrelic Shows NewRelic summary report.
-     * @option uri The uri from nginx-access.log.
+     * @option filter Show the most executed queries. 
      * 
-     * @usage <site>.<env> --grouped-by="{KEYWORD}"
+     * @usage <site>.<env> 
      * 
      * Count of queries based on their time of execution:
      *   terminus logs:parse:mysql-slow <site>.<env> --grouped-by=time 
      * 
+     * Display only the first N queries in the output. Sort output by count i.e. number of times query found in mysqld-slow-query.log.
+     * This queries might be a good option for caching the result.
+     *   terminus logs:parse:mysql-slow <site>.<env> --grouped-by=query-count 
+     * 
+     * Display only the first N queries in the output. Top queries which returned maximum rows.
+     *   terminus logs:parse:mysql-slow <site>.<env> --grouped-by=average-rows-sent
+     * 
+     * Display only the first N queries in the output. Sort by query time or average query time.
+     *   terminus logs:parse:mysql-slow <site>.<env> --grouped-by=average-time
+     * 
      * Display everything:
      *   terminus logs:parse:mysql-slow <site>.<env>
      */ 
-    public function MysqlSlowCommand($site_env, $options = ['php' => false, 'shell' => true, 'newrelic' => false, 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => ''])
+    public function MysqlSlowCommand($site_env, $options = ['php' => false, 'shell' => true, 'newrelic' => false, 'grouped-by' => '', 'filter' => '5'])
     {
         // Get the site name and environment.
         $this->DefineSiteEnv($site_env);
@@ -95,19 +105,6 @@ class MysqlSlowCommand extends TerminusCommand implements SiteAwareInterface
         // Get the logs per environment.
         $dirs = array_filter(glob($this->logPath . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
-        $this->log()->notice('Percona Toolkit Terms Meaning.');
-        $this->output()->writeln("
-            Column        Meaning
-            ============  ==========================================================
-            Rank          The query's rank within the entire set of queries analyzed
-            Query ID      The query's fingerprint
-            Response time The total response time, and percentage of overall total
-            Calls         The number of times this query was executed
-            R/Call        The mean response time per execution
-            V/M           The Variance-to-mean ratio of response time
-            Item          The distilled query
-        ");
-
         foreach ($dirs as $dir) 
         {
             if (file_exists($dir . '/' . 'mysqld-slow-query.log'))
@@ -130,10 +127,20 @@ class MysqlSlowCommand extends TerminusCommand implements SiteAwareInterface
             switch ($options['grouped-by']) 
             {
                 case false:
+                    $this->PtQueryInfo();
                     $this->passthru("pt-query-digest $mysql_slow_log");
                     break;
                 case 'time':
-                    $this->passthru("grep -A1 Query_time $mysql_slow_log | grep SET | awk -F '=' '{ print $2 }' | sort | uniq -c | sort -nr");
+                    $this->passthru("grep -A1 Query_time $mysql_slow_log | grep SET | awk -F '=' '{ print date -r $2 }' | sort | uniq -c | sort -nr");
+                    break;
+                case 'query-count':
+                    $this->passthru("mysqldumpslow -a -s c -t {$options['filter']} {$mysql_slow_log}");
+                    break;
+                case 'average-rows-sent':
+                    $this->passthru("mysqldumpslow -a -s r -t {$options['filter']} {$mysql_slow_log}");
+                    break;
+                case 'average-time':
+                    $this->passthru("mysqldumpslow -a -s t -t {$options['filter']} {$mysql_slow_log}");
                     break;
                 default:   
                     $this->log()->notice("You've reached the great beyond.");
@@ -168,5 +175,24 @@ class MysqlSlowCommand extends TerminusCommand implements SiteAwareInterface
         {
             throw new TerminusException('Command `{command}` failed with exit code {status}', ['command' => $command, 'status' => $result]);
         }
+    }
+
+    /**
+     * Pt-query-digest info.
+     */
+    protected function PtQueryInfo()
+    {
+        $this->log()->notice('Percona Toolkit Terms Meaning.');
+        $this->output()->writeln("
+            Column        Meaning
+            ============  ==========================================================
+            Rank          The query's rank within the entire set of queries analyzed
+            Query ID      The query's fingerprint
+            Response time The total response time, and percentage of overall total
+            Calls         The number of times this query was executed
+            R/Call        The mean response time per execution
+            V/M           The Variance-to-mean ratio of response time
+            Item          The distilled query
+        ");
     }
 }
