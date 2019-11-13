@@ -1,4 +1,4 @@
-# Terminus Site Debug Plugin
+# Terminus Site Logs Parser
 
 [![Terminus v1.x Compatible](https://img.shields.io/badge/terminus-v1.x-green.svg)](https://github.com/geraldvillorente/terminus-logs/tree/1.x)
 
