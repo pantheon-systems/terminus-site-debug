@@ -48,7 +48,7 @@ class PhpSlowCommand extends TerminusCommand implements SiteAwareInterface
      * @option php Parse the logs via PHP. 
      * @option shell Parse the logs using *nix built-in tools.
      * @option newrelic Shows NewRelic summary report.
-     * @option uri The uri from nginx-access.log.
+     * @option uri The request uri from nginx-access.log.
      * 
      * @usage <site>.<env> --shell --grouped-by="{KEYWORD}"
      * 
@@ -109,7 +109,7 @@ class PhpSlowCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * Parse PHP slow log.
+     * Parse PHP slow logs.
      */
     private function ParsePhpSlowLog($dir, $options)
     {
