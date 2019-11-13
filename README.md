@@ -1,8 +1,8 @@
-# Terminus Site Logs Parser
+# Logs Parser
 
 [![Terminus v1.x Compatible](https://img.shields.io/badge/terminus-v1.x-green.svg)](https://github.com/geraldvillorente/terminus-logs/tree/1.x)
 
-Terminus plugin that:
+A Terminus plugin that:
 * download site logs from a specific environment of a [Pantheon](https://www.pantheon.io) sites
 * parse the logs for debugging purposes
 
