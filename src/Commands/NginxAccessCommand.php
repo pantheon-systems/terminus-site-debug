@@ -49,8 +49,7 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
      * @option php Parse the logs via PHP.
      * @option shell Parse the logs using *nix commands.
      * @option newrelic Shows NewRelic summary report.
-     * @option type Type of logs to parse (php-error, php-fpm-error, nginx-access, nginx-error, mysqld-slow-query). It should be the filename of the log without the .log extension. To parse all the logs just use "all".
-     * @option uri The uri from nginx-access.log.
+     * @option uri The request uri from nginx-access.log.
      * 
      * @usage <site>.<env> --grouped-by="{KEYWORD}"
      * 
@@ -245,17 +244,17 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * Parse Nginx access log.
+     * Parse Nginx access logs.
      */
     private function ParseNginxAccessLog($dir, $options)
     {
-        // Parse php-slow log using *nix commands.
+        // Parse nginx-access.log using *nix commands.
         if (('which cat') && ('which awk') && ('which uniq') && ('which sort') && ('which sed'))
         {
             $nginx_access_log = $dir . '/nginx-access.log';
             $uri = $options['uri'];
             $this->output()->writeln("From <info>" . $nginx_access_log . "</> file.");
-            
+
             switch ($options['grouped-by'])
             {
                 case 'ip':
