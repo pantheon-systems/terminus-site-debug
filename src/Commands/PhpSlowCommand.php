@@ -50,7 +50,7 @@ class PhpSlowCommand extends TerminusCommand implements SiteAwareInterface
      * @option newrelic Shows NewRelic summary report.
      * @option uri The request uri from nginx-access.log.
      * 
-     * @usage <site>.<env> --shell --grouped-by="{KEYWORD}"
+     * @usage <site>.<env> --grouped-by="{KEYWORD}"
      * 
      * Search for the latest entries.
      *   terminus logs:parse:php-slow <site>.<env> --grouped-by=latest 

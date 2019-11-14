@@ -129,22 +129,21 @@ class NginxErrorCommand extends TerminusCommand implements SiteAwareInterface
             {
                 $nginx_error_log = $dir . '/nginx-error.log';
                 $keyword = $options['grouped-by'];
+
+                $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
+
                 switch ($options['grouped-by'])
                 {
                     case 'access forbidden':
-                        $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
                         $this->passthru("cat $nginx_error_log | grep \"$keyword\" | awk '{print $16}' | sort -n | uniq -c | sort -nr | head -20");
                         break;
                     case 'SSL_shutdown':
-                        $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
                         $this->passthru("cat $nginx_error_log | grep \"$keyword\" | sort -nr | head -10");
                         break;
                     case 'worker_connections':
-                        $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
                         $this->passthru("cat $nginx_error_log | grep \"$keyword\" | sort -nr | head -10");
                         break;
                     default:
-                        $this->output()->writeln("From <info>" . $nginx_error_log . "</> file.");
                         $this->passthru("tail $nginx_error_log | head -{$options['filter']}");
                 }
             }
