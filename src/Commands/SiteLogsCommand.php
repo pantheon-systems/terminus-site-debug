@@ -61,13 +61,16 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * @command logs:get
      * @aliases lg
      * 
-     * @usage <site>.<env> 
+     * @usage <site>.<env> [dest]
      * 
      * To get the current logs:
      *   terminus logs:get <site>.<env> --type=nginx-access --shell --grouped-by=ip
      * 
      * To get all the logs - including archived logs.
      *   terminus logs:get <site>.<env> --all
+     *
+     * To store logs in a custom location.
+     *   terminus logs:get <site>.<env> [/path/to/folder]
      */
     public function GetLogs($site_env, $dest = null,
         $options = ['exclude' => true, 'all' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true,]) {
