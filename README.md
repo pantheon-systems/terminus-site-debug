@@ -99,6 +99,10 @@ terminus logs:parse:nginx-error <site>.<env>
 
 ## Parsing PHP Error Logs
 
+### Search for the latest entries.
+```
+terminus logs:parse:php-error <site>.<env> --grouped-by=latest
+```
 ### Search **php-error** logs with 301 "Uncaught PHP Exception" error.
 ```
 terminus logs:parse <site>.<env> --type=php-error --filter="Uncaught PHP Exception" --php
