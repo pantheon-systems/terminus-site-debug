@@ -297,6 +297,9 @@ class NginxAccessCommand extends TerminusCommand implements SiteAwareInterface
                     $response_status = ($options['code']) ? $options['code'] : '200';
                     $this->passthru("cat $nginx_access_log | grep \"$response_status\" | grep -v robots.txt | grep -v '\\.css' | grep -v '\\.jss*' | grep -v '\\.png' | grep -v '\\.ico' | awk '{print $6}' | cut -d'\"' -f2 | sort | uniq -c | awk '{print $1, $2}'");
                     break;
+                case 'user-agent':
+                    $this-passthru("zgrep \"\" $nginx_access_log  | awk -F\\\" '{print $6}' | sort | uniq -c | sort -frn | head -10");
+                    break;
                 default:
                     $this->log()->notice("You've reached the great beyond.");
             }
