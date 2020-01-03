@@ -92,14 +92,29 @@ class PhpErrorCommand extends TerminusCommand implements SiteAwareInterface
         // Get the logs per environment.
         $dirs = array_filter(glob($this->logPath . '/' . $site . '/' . $env . '/*'), 'is_dir');
 
+        $container = [];
+        $storage = [];
+
         foreach ($dirs as $dir) 
         {
             if (file_exists($dir . '/php-error.log'))
             {
                 // Parse php-error.log using *nix commands.
-                $this->ParsePhpErrorLog($dir, $options);
+                if (!$options['php'] && $options['shell'])
+                {
+                    $this->ParsePhpErrorLog($dir, $options);
+                }
+                
+                // Parse php-error.log using PHP.
+                if ($options['php'] && $options['shell'])
+                {
+                    $container[] = $this->PhpParser($dir, $options, $storage);
+                }
             }
         }
+        print_r($container);
+        exit();
+        $this->PhpParserResult($container);
     }
 
     /**
@@ -107,24 +122,98 @@ class PhpErrorCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function ParsePhpErrorLog($dir, $options)
     {
-        if (('which cat') && ('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
+        if (!$options['php'] && $options['shell'])
         {
-            $php_error_log = $dir . '/php-error.log';
-
-            $this->output()->writeln("From <info>" . $php_error_log . "</> file.");
-            
-            switch ($options['grouped-by'])
+            if (('which cat') && ('which grep') && ('which tail') && ('which cut') && ('which uniq') && ('which sort'))
             {
-                case 'latest':
-                    $this->passthru("cat $php_error_log | tail -{$options['filter']}");
-                    break;
-                default:
-                    $this->log()->notice("You've reached the great beyond.");
+                $php_error_log = $dir . '/php-error.log';
+
+                $this->output()->writeln("From <info>" . $php_error_log . "</> file.");
+                
+                switch ($options['grouped-by'])
+                {
+                    case 'latest':
+                        $this->passthru("cat $php_error_log | tail -{$options['filter']}");
+                        break;
+                    default:
+                        $this->log()->notice("You've reached the great beyond.");
+                }
+            } 
+            else 
+            {
+                $this->log()->error("Required utilities are not installed.");
             }
-        } 
+        }
+    }
+
+    /**
+     * PHP parser.
+     */
+    protected function PhpParser($dir, $options, $storage)
+    {
+        if ($options['php'] && $options['shell'])
+        {
+            $log = $dir . '/php-error.log';
+            $handle = fopen($log, 'r');
+
+            if ($handle) 
+            {
+                while (!feof($handle)) 
+                {
+                    $buffer = fgets($handle);
+    
+                    if (!empty($options['since']))
+                    {
+                        if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since'])) 
+                        {
+                            $storage[][] = $buffer;
+                        }
+                    }
+                    else 
+                    {
+                        if (strpos($buffer, $options['filter']) !== FALSE) 
+                        {
+                            $storage[][] = $buffer;
+                        }
+                    }
+                }
+                fclose($handle);
+            }
+
+            echo "hello";
+            print_r($storage);
+            echo "end";
+
+            return $storage;
+        }
+    }
+
+    /**
+     * PHP parser result.
+     */
+    protected function PhpParserResult($container)
+    {
+        if (is_array(@$container)) 
+        {
+            $count = [];
+
+            foreach ($container as $i => $matches) 
+            {
+                $this->output()->writeln("From <info>" . $i . "</> file.");
+                $this->output()->writeln($this->line('='));
+                
+                foreach ($matches as $match)
+                {
+                    $count[] = $match;
+                    $this->output()->writeln($match);
+                    $this->output()->writeln($this->line('-'));
+                }
+            }
+            $this->log()->notice(sizeof($count) . " " . ((sizeof($count) > 1) ? 'results' : 'result') . " matched found.");
+        }
         else 
         {
-            $this->log()->error("Required utilities are not installed.");
+            $this->log()->notice("No matches found.");
         }
     }
 
