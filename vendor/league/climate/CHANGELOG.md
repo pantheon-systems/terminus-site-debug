@@ -1,6 +1,51 @@
 Changelog
 =========
 
+--------
+
+## 3.7.0 - 2021-01-10
+
+### Changed
+
+* [Support] Added support for PHP 8.0.
+* [Support] Dropped support for PHP 7.2.
+
+--------
+
+## 3.6.0 - 2020-10-04
+
+### Added
+
+* [Arguments] Add a method to access trailing args as array. [#158](https://github.com/thephpleague/climate/pull/158)
+
+### Fixed
+
+* [Table] Add support for newlines in table data. [#160](https://github.com/thephpleague/climate/pull/160)
+* [Checkbox] Don't try to add padding if the there's no spare space. [#161](https://github.com/thephpleague/climate/issues/161)
+
+### Changed
+
+* [Support] Dropped support for PHP 7.1.
+
+--------
+
+## 3.5.2 - 2019-12-01
+
+### Fixed
+
+* [Checkbox] Ensure we can output when the terminal width is unknown. [#156](https://github.com/thephpleague/climate/pull/156)
+
+--------
+
+## 3.5.1 - 2019-11-24
+
+### Fixed
+
+* [Art] Be stricter about matching filenames when looking for art. [#155](https://github.com/thephpleague/climate/issues/155)
+* [Support] Provide better support for Windows using GitHub actions.
+
+--------
+
 ## 3.5.0 - 2019-02-10
 
 ### Added
