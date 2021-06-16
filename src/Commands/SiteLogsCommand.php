@@ -95,7 +95,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $src = "$env_id.$site_id";
         $files = '*.log';
 
-        // Set destination to cwd if not specified.
+        // If the destination parameter is empty, set destination to ~/.terminus/site-logs/[sitename]/[env]/.
         if (!$dest) 
         {
             $dest = $this->logPath . '/'. $site . '/' . $env;
