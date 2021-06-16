@@ -63,9 +63,6 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @usage <site>.<env> [dest]
      * 
-     * To get the current logs:
-     *   terminus logs:get <site>.<env> --type=nginx-access --shell --grouped-by=ip
-     * 
      * To get all the logs - including archived logs.
      *   terminus logs:get <site>.<env> --all
      *
