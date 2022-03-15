@@ -165,7 +165,12 @@ For help installing, see [Manage Plugins](https://pantheon.io/docs/terminus/plug
 ```
 mkdir -p ~/.terminus/plugins
 cd ~/.terminus/plugins
-git clone https://github.com/geraldvillorente/terminus-site-debug.git
+git clone https://github.com/pantheon-systems/terminus-site-debug.git
+```
+
+To install this in Terminus 3, run this command:
+```
+terminus self:plugin:install pantheon-systems/terminus-site-debug
 ```
 
 ## Credits 

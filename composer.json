@@ -1,5 +1,5 @@
 {
-    "name": "geraldvillorente/terminus-site-debug",
+    "name": "pantheon-systems/terminus-site-debug",
     "description": "Get server logs on all appservers in a specific environment.",
     "type": "terminus-plugin",
     "autoload": {
