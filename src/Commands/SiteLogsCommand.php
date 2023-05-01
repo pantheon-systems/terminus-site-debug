@@ -30,8 +30,25 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     use SiteAwareTrait;
     use StructuredListTrait;
 
+    /**
+     * @var
+     */
     private $site;
+
+    /**
+     * @var
+     */
     private $environment;
+
+    /**
+     * @var false|string
+     */
+    private $width;
+
+    /**
+     * @var string
+     */
+    private $logPath;
 
     /**
      * Object constructor
@@ -44,6 +61,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $this->logPath = getenv('HOME') . '/.terminus/site-logs';
     }
 
+    /**
+     * @var string[]
+     */
     private $logs_filename = [
         'nginx-access',
         'nginx-error',
@@ -654,10 +674,15 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function DefineSiteEnv($site_env)
     {
-        list($this->site, $this->environment) = $this->getSiteEnv($site_env);
+        [$this->site, $this->environment] = $this->getSiteEnv($site_env);
     }
 
-    public function NewRelicHealthCheck($site_env) 
+    /**
+     * @param $site_env
+     *
+     * @return void
+     */
+    public function NewRelicHealthCheck($site_env)
     {
         $this->DefineSiteEnv($site_env);
         $site = $this->site->get('name');
@@ -825,7 +850,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function checkSiteHeaders($site_env)
     {
-        list(, $env) = $this->getSiteEnv($site_env);
+        [, $env] = $this->getSiteEnv($site_env);
         $domains = $env->getDomains()->filter(
             function ($domain) {
                 return $domain->get('type') === 'custom';
