@@ -25,8 +25,20 @@ class MysqlSlowCommand extends TerminusCommand implements SiteAwareInterface
     use SiteAwareTrait;
     use StructuredListTrait;
 
+    /**
+     * @var
+     */
     private $site;
+
+    /**
+     * @var
+     */
     private $environment;
+
+    /**
+     * @var string
+     */
+    private $logPath;
 
     /**
      * Object constructor
@@ -160,7 +172,7 @@ class MysqlSlowCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function DefineSiteEnv($site_env)
     {
-        list($this->site, $this->environment) = $this->getSiteEnv($site_env);
+        [$this->site, $this->environment] = $this->getSiteEnv($site_env);
     }
 
     /**
