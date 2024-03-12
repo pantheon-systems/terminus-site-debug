@@ -83,6 +83,8 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      * 
      * @usage <site>.<env> [dest]
      * 
+     * @option progress Show the progress of the download.
+     * 
      * To get all the logs - including archived logs.
      *   terminus logs:get <site>.<env> --all
      *
@@ -90,7 +92,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      *   terminus logs:get <site>.<env> [/path/to/folder]
      */
     public function GetLogs($site_env, $dest = null,
-        $options = ['exclude' => true, 'all' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true,]) {
+        $options = ['exclude' => true, 'all' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true, 'progress' => false]) {
         
         // Create the logs directory if not present.
         if (!is_dir($this->logPath))
@@ -111,6 +113,13 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Set src and files.
         $src = "$env_id.$site_id";
         $files = '*.log';
+
+        // only send output to /dev/null if the --progress option wasn't passed
+        $devnull = '>/dev/null 2>&1';
+        if ($options['progress']) 
+        {
+            $devnull = '';
+        }
 
         // If the destination parameter is empty, set destination to ~/.terminus/site-logs/[sitename]/[env]/.
         if (!$dest) 
@@ -141,13 +150,13 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             if ($options['all'])
             {
                 $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/* $dir"]);
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/* $dir >/dev/null 2>&1");
+                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/* $dir $devnull");
             }
             else
             {
                 $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/nginx/* $dir >/dev/null 2>&1");
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/php/* $dir >/dev/null 2>&1");
+                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/nginx/* $dir $devnull");
+                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/php/* $dir $devnull");
             }
         }
 
