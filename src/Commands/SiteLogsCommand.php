@@ -150,7 +150,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             if ($options['all'])
             {
                 $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/* $dir"]);
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/* $dir $devnull");
+                $this->passthru("rsync $rsync_options -zir --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/* $dir $devnull");
             }
             else
             {
