@@ -149,12 +149,16 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
             if ($options['all'])
             {
-                $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
+                $this->log()->info('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
+
+                # rsync recursive download (-r) with trailing slash on source downloads all files in the source directory
                 $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/ $dir $devnull");
             }
             else
             {
-                $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
+                $this->log()->info('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
+
+                # rsync recursive download (-r) with trailing slash on source downloads all files in the source directory
                 $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/nginx/ $dir $devnull");
                 $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/php/ $dir $devnull");
             }
@@ -172,7 +176,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             }
 
             $this->log()->notice('Downloading logs from dbserver...');
-            $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$db_server_ip:logs/*.log $dir"]);
+            $this->log()->info('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$db_server_ip:logs/*.log $dir"]);
+
+            # rsync recursive download (-r) with trailing slash on source downloads all files in the source directory
             $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' --include='*.log' --exclude='*' $src@$db_server_ip:logs/ $dir >/dev/null 2>&1");
         }
     }
