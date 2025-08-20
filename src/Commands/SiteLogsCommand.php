@@ -80,11 +80,11 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @command logs:get
      * @aliases lg
-     * 
+     *
      * @usage <site>.<env> [dest]
-     * 
+     *
      * @option progress Show the progress of the download.
-     * 
+     *
      * To get all the logs - including archived logs.
      *   terminus logs:get <site>.<env> --all
      *
@@ -93,7 +93,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function GetLogs($site_env, $dest = null,
         $options = ['exclude' => true, 'all' => false, 'nginx-access' => false, 'nginx-error' => false, 'php-fpm-error' => false, 'php-slow' => false, 'pyinotify' => false, 'watcher' => false, 'newrelic' => true, 'progress' => false]) {
-        
+
         // Create the logs directory if not present.
         if (!is_dir($this->logPath))
         {
@@ -102,7 +102,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             $this->log()->notice('Creating logs directory.');
             mkdir($this->logPath, 0777, true);
         }
-         
+
         // Get env_id and site_id.
         $this->DefineSiteEnv($site_env);
         $site = $this->site->get('name');
@@ -116,13 +116,13 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         // only send output to /dev/null if the --progress option wasn't passed
         $devnull = '>/dev/null 2>&1';
-        if ($options['progress']) 
+        if ($options['progress'])
         {
             $devnull = '';
         }
 
         // If the destination parameter is empty, set destination to ~/.terminus/site-logs/[sitename]/[env]/.
-        if (!$dest) 
+        if (!$dest)
         {
             $dest = $this->logPath . '/'. $site . '/' . $env;
         }
@@ -137,55 +137,61 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
         $this->log()->notice('Downloading logs from appserver...');
         // Appserver - Loop through the record and download the logs.
-        foreach($appserver_dns_records as $appserver) 
+        foreach($appserver_dns_records as $appserver)
         {
             $app_server_ip = $appserver['ip'];
             $dir = $dest . '/' . $app_server_ip;
 
-            if (!is_dir($dir)) 
+            if (!is_dir($dir))
             {
                 mkdir($dir, 0777, true);
             }
 
             if ($options['all'])
             {
-                $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/* $dir"]);
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/* $dir $devnull");
+                $this->log()->info('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
+
+                # rsync recursive download (-r) with trailing slash on source downloads all files in the source directory
+                $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/ $dir $devnull");
             }
             else
             {
-                $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/nginx/* $dir $devnull");
-                $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/php/* $dir $devnull");
+                $this->log()->info('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$app_server_ip:logs/ $dir"]);
+
+                # rsync recursive download (-r) with trailing slash on source downloads all files in the source directory
+                $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/nginx/ $dir $devnull");
+                $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$app_server_ip:logs/php/ $dir $devnull");
             }
         }
 
         // DBserver - Loop through the record and download the logs.
-        foreach($dbserver_dns_records as $dbserver) 
+        foreach($dbserver_dns_records as $dbserver)
         {
             $db_server_ip = $dbserver['ip'];
             $dir = $dest . '/' . $db_server_ip;
 
-            if (!is_dir($dir)) 
+            if (!is_dir($dir))
             {
                 mkdir($dir, 0777, true);
             }
 
             $this->log()->notice('Downloading logs from dbserver...');
-            $this->log()->notice('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$db_server_ip:logs/*.log $dir"]);
-            $this->passthru("rsync $rsync_options -zi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' $src@$db_server_ip:logs/*.log $dir >/dev/null 2>&1");
+            $this->log()->info('Running {cmd}', ['cmd' => "rsync $rsync_options $src@$db_server_ip:logs/*.log $dir"]);
+
+            # rsync recursive download (-r) with trailing slash on source downloads all files in the source directory
+            $this->passthru("rsync $rsync_options -azvi --progress --ipv4 --exclude=.git -e 'ssh -p 2222' --include='*.log' --exclude='*' $src@$db_server_ip:logs/ $dir >/dev/null 2>&1");
         }
     }
 
     /**
-     * Passthru command. 
+     * Passthru command.
      */
     protected function passthru($command)
     {
         $result = 0;
         passthru($command, $result);
 
-        if ($result != 0) 
+        if ($result != 0)
         {
             throw new TerminusException('Command `{command}` failed with exit code {status}', ['command' => $command, 'status' => $result]);
         }
@@ -194,12 +200,12 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Rsync options.
      */
-    private function RsyncOptions($options) 
+    private function RsyncOptions($options)
     {
       $rsync_options = '';
       $exclude = $this->ParseExclude($options);
 
-      foreach($exclude as $item) 
+      foreach($exclude as $item)
       {
         $rsync_options .= "--exclude $item ";
       }
@@ -210,35 +216,35 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Rsync exclude options.
      */
-    private function ParseExclude($options) 
+    private function ParseExclude($options)
     {
         $exclude = [];
 
         // Parse option for exclude or include-only option.
-        foreach($options as $option_key => $val) 
+        foreach($options as $option_key => $val)
         {
             // If option is set.
-            if ($val) 
+            if ($val)
             {
 
                 // Proccess only the filenames.
-                if ($option_key !== 'exclude' && in_array($option_key, $this->logs_filename)) 
+                if ($option_key !== 'exclude' && in_array($option_key, $this->logs_filename))
                 {
 
                     // Add directly to exclude array if exclude tag was passed.
-                    if ($options['exclude']) 
+                    if ($options['exclude'])
                     {
                         $exclude[] = $option_key . '.log';
                     }
-                    else 
+                    else
                     {
                         // If exclude tag was not passed, exclude filenames that are not passed.
-                        if (empty($exclude)) 
+                        if (empty($exclude))
                         {
                             // Since $exclude array is initially empty, get list form logs_filename.
                             $exclude = array_diff($this->logs_filename, array($option_key));
                         }
-                        else 
+                        else
                         {
                             $exclude = array_diff($exclude, array($option_key));
                         }
@@ -248,9 +254,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         // Add .log if no --exclude tag.
-        if (!$options['exclude']) 
+        if (!$options['exclude'])
         {
-          foreach($exclude as &$item) 
+          foreach($exclude as &$item)
           {
             $item .= '.log';
           }
@@ -261,50 +267,50 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
     /**
      * Parse the logs.
-     * 
+     *
      * @command logs:parse
      * @aliases lp
-     * 
+     *
      * @param string $site_env The site name and site environment. Example: foo.dev for Dev environment, foo.test for Test environment, and foo.live for Live environment.
      * @option php Parse the logs via PHP.
      * @option shell Parse the logs using *nix commands.
      * @option newrelic Shows NewRelic summary report.
      * @option type Type of logs to parse (php-error, php-fpm-error, nginx-access, nginx-error, mysqld-slow-query). It should be the filename of the log without the .log extension. To parse all the logs just use "all".
      * @option uri The uri from nginx-access.log.
-     * 
+     *
      * @usage <site>.<env> --type={all|nginx-access|nginx-error|php-error|php-fpm-error|php-slow} --shell --grouped-by="{KEYWORD}"
-     * 
+     *
      * To get the top visitors by IP:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=ip
-     * 
+     *
      * To get top responses by HTTP status:
-     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=response-code 
-     * 
+     *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=response-code
+     *
      * To get top 403 requests:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=403
-     * 
-     * To get top 404 requests: 
+     *
+     * To get top 404 requests:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=404
-     * 
+     *
      * To get PHP top 404 requests:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=php-404
-     * 
+     *
      * Top PHP 404 requests in full details:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=php-404-detailed
-     * 
+     *
      * To get 502 requests:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=502
-     * 
+     *
      * Top IPs accessing 502 (requires "terminus logs:parse site_name.env --type=nginx-access --shell --grouped-by=502" to get the SITE_URI):
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=ip-accessing-502 --uri={SITE_URI}
-     * 
+     *
      * To count the request that hits the appserver per second:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=request-per-second
-     * 
+     *
      * Top request by HTTP code:
      *   terminus logs:parse <site>.<env> --type=nginx-access --shell --grouped-by=request-method --code=[200|403|404|502]
      */
-    public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => '']) 
+    public function ParseLogs($site_env, $options = ['php' => false, 'shell' => false, 'newrelic' => false, 'type' => '', 'grouped-by' => '', 'uri' => '', 'filter' => '', 'since' => '', 'until' => '', 'method' => ''])
     {
         // Get the site name and environment.
         $this->DefineSiteEnv($site_env);
@@ -314,7 +320,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         if ($this->logPath . '/' . $site . '/' . $env)
         {
             $this->LogParser($site_env, $options);
-            
+
             if ($options['newrelic'])
             {
                 $this->output()->writeln('');
@@ -330,13 +336,13 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
     /**
      * List the log files.
-     * 
+     *
      * @command logs:list
      * @aliases ls
-     * 
+     *
      * @param string $site_env Site name and environment id.
      */
-    public function LogsList($site_env) 
+    public function LogsList($site_env)
     {
         // Get the site name and environment id.
         $this->DefineSiteEnv($site_env);
@@ -353,7 +359,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
                 $this->log()->notice('Listing all the downloaded logs.');
 
-                foreach ($dirs as $dir) 
+                foreach ($dirs as $dir)
                 {
                     $this->output()->writeln($path . '/' . $dir);
                     $items = array_diff(scandir($path . '/' . $dir), array('.DS_Store', '.', '..'));
@@ -376,9 +382,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             passthru("terminus logs:list $site_env");
 
             exit();
-        } 
+        }
         $this->log()->error('Logs directory not found.');
-    
+
         // Create the logs directory if not present.
         $this->log()->notice('Creating logs directory.');
         mkdir($this->logPath, 0777, true);
@@ -396,7 +402,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Log parser.
      */
-    private function LogParser($site_env, $options) 
+    private function LogParser($site_env, $options)
     {
         // Define site and environment.
         $this->DefineSiteEnv($site_env);
@@ -476,7 +482,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 }
             }
         }
-        else 
+        else
         {
             $this->log()->error('Type value is missing.');
             exit();
@@ -485,44 +491,44 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Scanner storage.
         $container = [];
 
-        foreach ($dirs as $dir) 
+        foreach ($dirs as $dir)
         {
             // Get the log file.
-            if ($options['type'] === 'all' && $options['php']) 
+            if ($options['type'] === 'all' && $options['php'])
             {
-                if ($res = opendir($dir)) 
+                if ($res = opendir($dir))
                 {
-                    while (false !== ($entry = readdir($res))) 
+                    while (false !== ($entry = readdir($res)))
                     {
-                        if ($entry != "." && $entry != "..") 
+                        if ($entry != "." && $entry != "..")
                         {
                             $log = $dir . '/' . $entry;
-                            if (file_exists($log)) 
+                            if (file_exists($log))
                             {
                                 $handle = fopen($log, 'r');
                                 // Scan possible matches in the logs.
-                                if ($handle) 
+                                if ($handle)
                                 {
-                                    while (!feof($handle)) 
+                                    while (!feof($handle))
                                     {
                                         $buffer = fgets($handle);
                                         if (!empty($options['since']))
                                         {
-                                            if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since'])) 
+                                            if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since']))
                                             {
                                                 $container[$log][] = $buffer;
                                             }
                                         }
-                                        else 
+                                        else
                                         {
-                                            if (strpos($buffer, $options['filter']) !== FALSE) 
+                                            if (strpos($buffer, $options['filter']) !== FALSE)
                                             {
                                                 $container[$log][] = $buffer;
                                             }
                                         }
                                     }
                                     fclose($handle);
-                                } 
+                                }
                             }
                         }
                     }
@@ -554,10 +560,10 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             else if ($options['type'] === 'nginx-error' && $options['shell'])
             {
                 if (!$options['filter']) {
-                    $this->log()->notice("You need to specify the filter."); 
+                    $this->log()->notice("You need to specify the filter.");
                     exit();
                 }
-                
+
                 if (file_exists($dir . '/' . $options['type'] . '.log'))
                 {
                     $nginx_error_log = $dir . '/' . $options['type'] . '.log';
@@ -578,26 +584,26 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             {
                 $log = $dir . '/' . $options['type'] . ".log";
 
-                if (file_exists($log)) 
+                if (file_exists($log))
                 {
                     $handle = fopen($log, 'r');
 
-                    if ($handle) 
+                    if ($handle)
                     {
-                        while (!feof($handle)) 
+                        while (!feof($handle))
                         {
                             $buffer = fgets($handle);
-            
+
                             if (!empty($options['since']))
                             {
-                                if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since'])) 
+                                if (strpos($buffer, $options['filter']) !== FALSE && strpos($buffer, $options['since']))
                                 {
                                     $container[$log][] = $buffer;
                                 }
                             }
-                            else 
+                            else
                             {
-                                if (strpos($buffer, $options['filter']) !== FALSE) 
+                                if (strpos($buffer, $options['filter']) !== FALSE)
                                 {
                                     $container[$log][] = $buffer;
                                 }
@@ -607,7 +613,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     }
                 }
             }
-            else 
+            else
             {
                 $this->log()->notice("Nothing to process.");
                 exit();
@@ -617,15 +623,15 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Return the matches.
         if ($options['php'])
         {
-            if (is_array(@$container)) 
+            if (is_array(@$container))
             {
                 $count = [];
 
-                foreach ($container as $i => $matches) 
+                foreach ($container as $i => $matches)
                 {
                     $this->output()->writeln("From <info>" . $i . "</> file.");
                     $this->output()->writeln($this->line('='));
-                    
+
                     foreach ($matches as $match)
                     {
                         $count[] = $match;
@@ -635,7 +641,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 }
                 $this->log()->notice(sizeof($count) . " " . ((sizeof($count) > 1) ? 'results' : 'result') . " matched found.");
             }
-            else 
+            else
             {
                 $this->log()->notice("No matches found.");
             }
@@ -643,20 +649,20 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * 
+     *
      * Format date and time in the server logs
-     * 
+     *
      * TODO: Roald
      */
-    public function ConvertDate($type, $date_n_time) 
+    public function ConvertDate($type, $date_n_time)
     {
         $convert = $date_n_time;
 
-        if ($type == 'nginx-access' || 'nginx-error') 
+        if ($type == 'nginx-access' || 'nginx-error')
         {
 
         }
-        elseif($type == 'php-error' || 'php-fpm-error' || 'php-slow') 
+        elseif($type == 'php-error' || 'php-fpm-error' || 'php-slow')
         {
 
         }
@@ -665,7 +671,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Line separator.
      */
-    private function line($separator) 
+    private function line($separator)
     {
         $line = null;
         for ($i = 1; $i <= $this->width; $i++)
@@ -676,9 +682,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         return $line;
     }
 
-    /** 
+    /**
      * Define site environment properties.
-     * 
+     *
      * @param string $site_env Site and environment in a format of <site>.<env>.
      */
     private function DefineSiteEnv($site_env)
@@ -696,7 +702,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $this->DefineSiteEnv($site_env);
         $site = $this->site->get('name');
         $env = $this->environment->id;
-    
+
         $this->passthru("terminus newrelic:healthcheck $site.$env");
     }
 
@@ -711,7 +717,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
             $php_fpm_error_log = $dir . '/php-fpm-error.log';
 
             $this->output()->writeln("From <info>" . $php_slow_log . "</> file.");
-            
+
             switch ($options['grouped-by'])
             {
                 case 'latest':
@@ -720,9 +726,9 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                     $this->output()->writeln("<info>--</> Looking for additional information of <info>pid $pid</> in <info>$php_fpm_error_log</> log.");
                     sleep(6);
                     exec("grep -n \"WARNING: \[pool www\] child $pid\" $php_fpm_error_log > /tmp/temp_php_fpm_error_log_file");
-                    
+
                     $fn = fopen("/tmp/temp_php_fpm_error_log_file", "r");
-  
+
                     while(!feof($fn))  {
                         $result = fgets($fn);
                         preg_match('#^(\d+):(.*)$#', $result, $pid_matches);
@@ -731,7 +737,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                         $log_message = ($pid_matches[2]??'');
                         preg_match('#request: \"(GET|POST|HEAD) (.*?)\"#', $log_message, $log_message_matches);
                         preg_match_all('#\(([^\)]+)\)#', $log_message, $time);
-                        if (!empty($line_number) && !empty($log_message)) 
+                        if (!empty($line_number) && !empty($log_message))
                         {
                             $this->output()->writeln("<info>Line number:</> {$line_number}");
                             $this->output()->writeln("<info>Request method:</>  {$log_message_matches[1]}");
@@ -739,11 +745,11 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                             if (isset($time[1]) && isset($time[1][1]))
                             {
                                 $this->output()->writeln("<info>Time spent:</> {$time[1][1]}");
-                            }  
+                            }
                         }
                     }
                     fclose($fn);
-                    
+
                     $this->passthru("rm -rf /tmp/temp_php_fpm_error_log_file");
                     $this->output()->writeln("");
                     break;
@@ -756,8 +762,8 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 default:
                     $this->log()->notice("You've reached the great beyond.");
             }
-        } 
-        else 
+        }
+        else
         {
             $this->log()->error("Required utilities are not installed.");
         }
@@ -773,7 +779,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Parse MySQL slow log.
         if ('which pt-query-digest')
         {
-            switch ($options['grouped-by']) 
+            switch ($options['grouped-by'])
             {
                 case false:
                     $this->passthru("pt-query-digest $mysql_slow_log");
@@ -781,7 +787,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
                 case 'time':
                     $this->passthru("grep -A1 Query_time $mysql_slow_log | grep SET | awk -F '=' '{ print $2 }' | sort | uniq -c | sort -nr");
                     break;
-                default:   
+                default:
                     $this->log()->notice("You've reached the great beyond.");
             }
             exit();
@@ -852,7 +858,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
     /**
      * Get the response header.
-     * 
+     *
      * @return RowsOfFields
      *
      * @param string $site_env Site & environment in the format `site-name.env`
@@ -875,7 +881,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
 
     /**
      * List all the sites in the logs.
-     * 
+     *
      * @command logs:list:sites
      * @aliases ll:sites lls
      *
@@ -883,7 +889,7 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
     public function ListSites()
     {
         $sites = array_diff(scandir($this->logPath), $this->Exclude());
-        
+
         foreach ($sites as $site)
         {
             $this->output()->writeln("- {$site}");
