@@ -135,6 +135,19 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         // Get dbserver IP address.
         $dbserver_dns_records = dns_get_record("dbserver.$env_id.$site_id.drush.in", DNS_A);
 
+        // Check if the site has no appserver (e.g. Node.js sites).
+        if (empty($appserver_dns_records)) {
+            $framework = $this->site->get('framework');
+            if ($framework === 'nodejs') {
+                $this->log()->error(
+                    "This site uses the Node.js framework which does not have traditional appserver logs. Use 'terminus node:logs:runtime:get' or 'terminus node:logs:build:get' to view logs instead."
+                );
+                return;
+            }
+            $this->log()->error('No appserver DNS records found for this site.');
+            return;
+        }
+
         $this->log()->notice('Downloading logs from appserver...');
         // Appserver - Loop through the record and download the logs.
         foreach($appserver_dns_records as $appserver)
@@ -348,6 +361,15 @@ class SiteLogsCommand extends TerminusCommand implements SiteAwareInterface
         $this->DefineSiteEnv($site_env);
         $site = $this->site->get('name');
         $envi = $this->environment->id;
+
+        // Check if the site uses Node.js framework (no traditional appserver logs).
+        $framework = $this->site->get('framework');
+        if ($framework === 'nodejs') {
+            $this->log()->error(
+                "This site uses the Node.js framework which does not have traditional appserver logs. Use 'terminus node:logs:runtime:get' or 'terminus node:logs:build:get' to view logs instead."
+            );
+            return;
+        }
 
         // Check the existence of logs directory.
         if (is_dir($this->logPath))
